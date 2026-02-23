@@ -1,16 +1,28 @@
 # spaceGen
 
-**Gene expression ML pipeline for spaceflight biology — medallion architecture with MLflow tracking**
+**Gene expression ML pipeline for spaceflight biology — hexagonal architecture, medallion data layers, MLflow tracking**
 
 ---
 
 ## Overview
 
-spaceGen is an ML pipeline for analyzing NASA GeneLab spaceflight transcriptomics data using a medallion lakehouse pattern. The project builds on my computational biology portfolio by focusing on the expression layer: GenBrowser visualizes chromosome structure, ChromApipe computes chromatin accessibility features from ATAC-seq data, and spaceGen models gene expression from RNA-seq to predict biological exposure states and identify conserved molecular signatures.
+spaceGen is an ML pipeline for analyzing NASA GeneLab spaceflight transcriptomics data. It predicts biological exposure states from RNA-seq gene expression and identifies conserved molecular signatures relevant to astronaut health — stress-response pathways, immune dysregulation, and mitochondrial dysfunction.
 
-The pipeline follows a bronze/silver/gold data architecture where raw NASA GeneLab datasets are progressively refined through QC, normalization, and feature engineering stages before ML modeling. All experiments are tracked with MLflow to maintain reproducibility and enable model versioning.
+The pipeline follows a bronze/silver/gold medallion data architecture where raw NASA GeneLab datasets are progressively refined through QC, normalization, and feature engineering before ML modeling. All experiments are tracked with MLflow for reproducibility and model versioning.
 
-This project demonstrates production-oriented bioinformatics pipeline design with modern data engineering patterns. The medallion architecture provides clear data lineage and makes the pipeline modular and testable.
+The codebase uses hexagonal (ports and adapters) architecture to separate core ML and bioinformatics logic from I/O and infrastructure. This means the same pipeline runs locally against Parquet files during development and can be pointed at cloud storage or Databricks by swapping adapters — no changes to core logic required.
+
+---
+
+## Portfolio Context
+
+This is the third project in a computational biology portfolio that follows data through chromosome structure → chromatin accessibility → gene expression:
+
+- **[GenBrowser](https://h4rrye.github.io/genBrowser)** — 3D interactive chromosome visualization (Three.js/TypeScript). Maps biological metrics like GC content and surface distance onto chromosome backbone geometry.
+- **[ChromApipe](https://github.com/h4rrye/chromApipe)** — Nextflow pipeline computing Chromosome Surface Accessible Area (CSAA) from PDB structures, with parallel API annotation from Ensembl, ENCODE, and GTEx. Dataflow architecture with Docker-containerized processes.
+- **spaceGen** — ML pipeline modeling gene expression responses to spaceflight. Hexagonal architecture with medallion data layers and MLflow experiment tracking.
+
+Each project demonstrates a different architectural pattern (interactive frontend, dataflow pipeline, ports-and-adapters application) and a different layer of the biology (structure, accessibility, expression).
 
 ---
 
@@ -18,61 +30,38 @@ This project demonstrates production-oriented bioinformatics pipeline design wit
 
 ```mermaid
 graph LR
-    A[NASA GeneLab API] --> B[Bronze Layer<br/>Raw RNA-seq counts]
-    B --> C[Silver Layer<br/>Normalized + QC'd]
-    C --> D[Gold Layer<br/>ML features]
-    D --> E[ML Models<br/>XGBoost, Elastic Net]
-    E --> F[MLflow Registry<br/>Tracked experiments]
+    A[NASA GeneLab API] --> B[Bronze<br/>Raw counts]
+    B --> C[Silver<br/>Normalized + QC'd]
+    C --> D[Gold<br/>ML features]
+    D --> E[Models<br/>XGBoost · Elastic Net]
+    E --> F[MLflow<br/>Tracking + Registry]
 ```
 
-**Data Flow:**
-- **Bronze:** Raw gene expression matrices and metadata from NASA GeneLab GLDS accessions
-- **Silver:** Normalized counts (log-CPM or VST), filtered genes, QC metrics, outlier detection
-- **Gold:** Feature-engineered tables with gene selection, pathway scores, and study-aware splits
-- **Models:** Trained classifiers with hyperparameter tracking and cross-study validation
-- **Registry:** MLflow experiment tracking with metrics, parameters, and model artifacts
+**Hexagonal design:** Core logic in `src/spacegen/core/` is pure — functions take dataframes in and return dataframes out, with no file I/O or MLflow calls. Ports (`ports/interfaces.py`) define abstract contracts for data reading, writing, and experiment logging. Adapters (`adapters/`) implement those contracts for local Parquet and MLflow. Swapping to S3 or Databricks means adding a new adapter, not touching core code.
+
+**Medallion layers:**
+- **Bronze:** Raw gene expression matrices and metadata ingested from NASA GeneLab GLDS accessions, partitioned by ingest date
+- **Silver:** Normalized counts (log-CPM or VST), filtered genes, QC metrics, outlier flags — versioned
+- **Gold:** Feature-engineered tables with variable gene selection, pathway scores, and study-aware splits — versioned
+- **Models:** Trained classifiers logged to MLflow with full parameter and metric tracking
 
 ---
 
 ## Datasets
 
-Targeting NASA GeneLab mouse RNA-seq datasets from spaceflight versus ground control studies. The focus is on transcriptomic responses to microgravity and radiation exposure, with an emphasis on conserved stress-response pathways and immune dysregulation signatures. Dataset selection is in progress, prioritizing studies with sufficient sample sizes for cross-study validation and consistent tissue types (liver, spleen, or muscle).
+Targeting NASA GeneLab mouse RNA-seq datasets from spaceflight versus ground control studies, starting with OSD-47 (mouse liver, spaceflight vs ground). The focus is on transcriptomic responses to microgravity and radiation exposure, prioritizing studies with sufficient sample sizes for cross-study validation and consistent tissue types.
 
 ---
 
 ## Pipeline Design
 
-The pipeline consists of four stages, each writing to a separate data layer. The bronze stage ingests raw RNA-seq count matrices and metadata from GeneLab, storing them in a standardized schema with study provenance. The silver stage performs gene filtering (low-expression removal), normalization (CPM + log transformation or variance-stabilizing transformation), and quality control including library size checks, PCA-based outlier detection, and batch effect visualization. The gold stage combines harmonization and feature engineering: gene IDs are aligned across studies, batch correction is applied if needed, and features are derived through variable gene selection and optional pathway scoring (ssGSEA). The modeling stage trains elastic net logistic regression and XGBoost classifiers to predict spaceflight exposure, using leave-one-study-out cross-validation to assess generalization. All model runs are logged to MLflow with parameters (normalization method, gene filter thresholds, feature set, hyperparameters), metrics (AUROC, AUPRC, F1), and artifacts (PCA plots, SHAP importance, confusion matrices).
-
----
-
-## MLflow Experiment Design
-
-**Tracked parameters:**
-- Normalization method (log-CPM, VST)
-- Gene filter threshold (minimum expression, variance percentile)
-- Feature selection approach (top-N variable genes, pathway-based)
-- Model type and hyperparameters (regularization strength, tree depth, learning rate)
-
-**Metrics:**
-- AUROC (held-out study)
-- AUPRC (held-out study)
-- F1 score
-- Cross-study generalization performance
-
-**Artifacts:**
-- PCA/UMAP plots for QC and batch effect visualization
-- SHAP feature importance plots
-- Confusion matrices
-- Pathway enrichment results (if applicable)
-
-All runs are logged to a local MLflow tracking server during development. Model artifacts and performance metrics are versioned to support reproducibility and enable comparison across feature engineering strategies.
+The pipeline has four stages, each writing to a separate medallion layer. The bronze stage ingests raw RNA-seq count matrices and metadata from GeneLab, storing them with study provenance and Hive-style ingest date partitioning. The silver stage performs gene filtering, normalization (CPM + log or VST), and quality control including library size checks, PCA-based outlier detection, and batch effect visualization. The gold stage handles harmonization and feature engineering together: gene ID alignment across studies, batch correction where needed, variable gene selection, and optional pathway scoring via ssGSEA. The modeling stage trains elastic net logistic regression and XGBoost classifiers to predict spaceflight exposure, validated with leave-one-study-out cross-validation. All runs are logged to MLflow with parameters, metrics (AUROC, AUPRC, F1), and artifacts (PCA plots, SHAP importance, confusion matrices).
 
 ---
 
 ## Current Status
 
-Project is in the planning phase. Architecture and pipeline design are complete. Initial implementation will focus on data ingestion from NASA GeneLab API and bronze layer table creation. The medallion lakehouse structure is designed to support incremental development where each layer can be validated independently before moving downstream.
+Architecture and pipeline design are complete. The hexagonal code structure is in place with ports, adapters, and core modules. Initial medallion directory structure is set up with OSD-47 as the first dataset. Implementation is starting with data ingestion from the NASA GeneLab API and bronze layer table creation.
 
 ---
 
