@@ -1,319 +1,83 @@
-# Spaceflight Gene Expression ML Pipeline  
-**Cloud-native transcriptomics modeling for spaceflight and radiation biology (AWS + Databricks + MLflow)**  
+# spaceGen
+
+**Gene expression ML pipeline for spaceflight biology — medallion architecture with MLflow tracking**
 
 ---
 
 ## Overview
-This project builds a reproducible, cloud-native machine learning pipeline to analyze spaceflight and radiation-related gene expression data. The system harmonizes multi-study transcriptomics datasets and trains models to predict biological exposure states while identifying conserved molecular signatures relevant to astronaut health.
 
-**Objectives**
-- Predict spaceflight or radiation exposure from gene expression  
-- Identify conserved stress-response pathways across studies  
-- Demonstrate production-grade bioinformatics MLOps on AWS  
+spaceGen is an ML pipeline for analyzing NASA GeneLab spaceflight transcriptomics data using a medallion lakehouse pattern. The project builds on my computational biology portfolio by focusing on the expression layer: GenBrowser visualizes chromosome structure, ChromApipe computes chromatin accessibility features from ATAC-seq data, and spaceGen models gene expression from RNA-seq to predict biological exposure states and identify conserved molecular signatures.
 
-**Scope**
-- Organisms: _[mouse / human / cell lines]_  
-- Studies: _[N]_  
-- Samples: _[N]_  
-- Task: _classification / regression_  
+The pipeline follows a bronze/silver/gold data architecture where raw NASA GeneLab datasets are progressively refined through QC, normalization, and feature engineering stages before ML modeling. All experiments are tracked with MLflow to maintain reproducibility and enable model versioning.
+
+This project demonstrates production-oriented bioinformatics pipeline design with modern data engineering patterns. The medallion architecture provides clear data lineage and makes the pipeline modular and testable.
 
 ---
 
 ## Architecture
 
-**Components**
+```mermaid
+graph LR
+    A[NASA GeneLab API] --> B[Bronze Layer<br/>Raw RNA-seq counts]
+    B --> C[Silver Layer<br/>Normalized + QC'd]
+    C --> D[Gold Layer<br/>ML features]
+    D --> E[ML Models<br/>XGBoost, Elastic Net]
+    E --> F[MLflow Registry<br/>Tracked experiments]
+```
 
-- AWS S3 data lake (raw → bronze → silver → gold)
-- Delta Lake tables for versioned lineage
-- Databricks Jobs / Workflows orchestration
-- MLflow Tracking + Model Registry
-- Optional batch inference endpoint
+**Data Flow:**
+- **Bronze:** Raw gene expression matrices and metadata from NASA GeneLab GLDS accessions
+- **Silver:** Normalized counts (log-CPM or VST), filtered genes, QC metrics, outlier detection
+- **Gold:** Feature-engineered tables with gene selection, pathway scores, and study-aware splits
+- **Models:** Trained classifiers with hyperparameter tracking and cross-study validation
+- **Registry:** MLflow experiment tracking with metrics, parameters, and model artifacts
 
 ---
 
 ## Datasets
 
-| Study    | Organism    | Tissue     | Condition        | Samples | Source  |
-| -------- | ----------- | ---------- | ---------------- | ------- | ------- |
-| GLDS-XXX | Mouse       | Liver      | Flight vs Ground | 48      | GeneLab |
-| GLDS-YYY | Human cells | Fibroblast | Radiation        | 36      | GeneLab |
-
-**Data sources**
-- NASA GeneLab (GLDS accessions)
-- Ground radiation analog studies
-- Public GEO datasets (if used)
+Targeting NASA GeneLab mouse RNA-seq datasets from spaceflight versus ground control studies. The focus is on transcriptomic responses to microgravity and radiation exposure, with an emphasis on conserved stress-response pathways and immune dysregulation signatures. Dataset selection is in progress, prioritizing studies with sufficient sample sizes for cross-study validation and consistent tissue types (liver, spleen, or muscle).
 
 ---
 
-## Problem Formulation
+## Pipeline Design
 
-**Task**
-- Classification: spaceflight vs ground  
-or  
-- Regression: radiation dose / exposure duration  
-
-**Relevance**
-Spaceflight and radiation induce immune dysregulation, DNA damage response, and mitochondrial stress. Predictive transcriptomic signatures support astronaut health risk assessment and countermeasure development.
-
----
-
-## Pipeline Stages
-
-### 1. Ingestion
-- Download GeneLab datasets and metadata
-- Standardize schema across studies  
-**Output:** bronze Delta tables  
-
-### 2. Preprocessing
-- Gene filtering
-- Normalization (e.g., CPM + log, VST)
-- QC (library size, PCA, outliers)  
-**Output:** study-level expression  
-
-### 3. Harmonization
-- Gene ID alignment
-- Batch correction or study-aware modeling
-- Study-wise splits  
-**Output:** harmonized expression  
-
-### 4. Feature Engineering
-- Variable gene selection
-- Pathway scores (ssGSEA / gene sets)
-- Optional cell-type estimates  
-**Output:** gold feature tables  
-
-### 5. Modeling
-- Elastic Net logistic regression
-- Gradient boosting (XGBoost / LightGBM)
-- Optional neural network  
-**Output:** MLflow runs  
-
-### 6. Evaluation
-- Leave-one-study-out validation
-- AUROC / AUPRC / calibration
-- Cross-study generalization  
-**Output:** metrics + plots  
-
-### 7. Inference
-- MLflow model registry
-- Batch scoring job
-- Predictions table  
+The pipeline consists of four stages, each writing to a separate data layer. The bronze stage ingests raw RNA-seq count matrices and metadata from GeneLab, storing them in a standardized schema with study provenance. The silver stage performs gene filtering (low-expression removal), normalization (CPM + log transformation or variance-stabilizing transformation), and quality control including library size checks, PCA-based outlier detection, and batch effect visualization. The gold stage combines harmonization and feature engineering: gene IDs are aligned across studies, batch correction is applied if needed, and features are derived through variable gene selection and optional pathway scoring (ssGSEA). The modeling stage trains elastic net logistic regression and XGBoost classifiers to predict spaceflight exposure, using leave-one-study-out cross-validation to assess generalization. All model runs are logged to MLflow with parameters (normalization method, gene filter thresholds, feature set, hyperparameters), metrics (AUROC, AUPRC, F1), and artifacts (PCA plots, SHAP importance, confusion matrices).
 
 ---
 
 ## MLflow Experiment Design
 
-**Tracked parameters**
-- normalization method
-- gene filter threshold
-- feature set
-- model type / hyperparameters  
+**Tracked parameters:**
+- Normalization method (log-CPM, VST)
+- Gene filter threshold (minimum expression, variance percentile)
+- Feature selection approach (top-N variable genes, pathway-based)
+- Model type and hyperparameters (regularization strength, tree depth, learning rate)
 
-**Metrics**
-- AUROC
-- AUPRC
-- F1
-- calibration error
-- external study performance  
+**Metrics:**
+- AUROC (held-out study)
+- AUPRC (held-out study)
+- F1 score
+- Cross-study generalization performance
 
-**Artifacts**
-- PCA / UMAP plots
-- QC reports
-- SHAP importance
-- pathway enrichment
-- confusion matrices  
+**Artifacts:**
+- PCA/UMAP plots for QC and batch effect visualization
+- SHAP feature importance plots
+- Confusion matrices
+- Pathway enrichment results (if applicable)
 
-**Model lifecycle**
-Staging → Production promotion based on held-out study performance.
+All runs are logged to a local MLflow tracking server during development. Model artifacts and performance metrics are versioned to support reproducibility and enable comparison across feature engineering strategies.
 
 ---
 
-## Results Summary
+## Current Status
 
-| Model       | AUROC (study-held-out) | AUPRC  |
-| ----------- | ---------------------- | ------ |
-| Elastic Net | _0.XX_                 | _0.XX_ |
-| XGBoost     | _0.XX_                 | _0.XX_ |
-
-**Key observations**
-- Conserved DNA damage response activation  
-- Mitochondrial pathway alteration  
-- Cross-study predictive signal present  
+Project is in the planning phase. Architecture and pipeline design are complete. Initial implementation will focus on data ingestion from NASA GeneLab API and bronze layer table creation. The medallion lakehouse structure is designed to support incremental development where each layer can be validated independently before moving downstream.
 
 ---
 
-## Biological Findings
-- Upregulation of oxidative stress pathways  
-- Immune signaling modulation  
-- Mitochondrial dysfunction signature  
+## Author
 
-These signatures are consistent across independent spaceflight studies.
-
----
-
-## Reproducibility & Lineage
-- Delta Lake versioned tables
-- MLflow run IDs for all experiments
-- Config-driven pipeline
-- Deterministic study splits
-- Fully scripted ETL and modeling
-
----
-
-## How to Run
-
-### Databricks
-1. Import repository
-2. Configure cluster
-3. Run workflow jobs in order:
-   - `01_ingest`
-   - `02_preprocess`
-   - `03_harmonize`
-   - `04_features`
-   - `05_train`
-   - `06_evaluate`
-
-### Local (optional)
-```bash
-pip install -r requirements.txt
-python pipelines/01_ingest.py
-python pipelines/02_preprocess.py
-python pipelines/03_harmonize.py
-python pipelines/04_features.py
-python pipelines/05_train.py
-python pipelines/06_evaluate.py
-```
-
-## Repository Structure
-
-pipelines/
-configs/
-notebooks/
-tests/
-docs/
-
-## **Configuration**
-
-
-
-
-
-Pipeline behavior is controlled via YAML configs:
-
-
-
-- normalization method
-- gene filtering thresholds
-- feature selection
-- model hyperparameters
-- split strategy
-
-
-
-
-
-------
-
-
-
-
-
-## **Validation Strategy**
-
-
-
-
-
-- Leave-one-study-out cross-validation
-- No sample leakage across studies
-- External dataset evaluation
-- Optional cross-species testing
-
-## **Limitations**
-
-
-
-
-
-- Limited sample sizes
-- Cross-study heterogeneity
-- Species and tissue differences
-- Variable sequencing protocols
-
-
-
-
-
-------
-
-
-
-
-
-## **Future Work**
-
-
-
-
-
-- Multi-omics integration (proteomics / metabolomics)
-- Radiation dose modeling
-- Cross-species transfer learning
-- Longitudinal exposure prediction
-
-
-
-
-
-------
-
-
-
-
-
-## **Citation**
-
-
-
-
-
-NASA GeneLab datasets and associated publications.
-
-Additional GEO studies where applicable.
-
-
-
-------
-
-
-
-
-
-## **Author**
-
-
-
-
-
-Harpreet Singh
-
+**Harpreet Singh**
 MSc Data Science, UBC
-
 Computational Biology & Machine Learning
-
-
-
-------
-
-
-
-
-
-## **Positioning**
-
-
-
-
-
-Cloud-native transcriptomics ML pipeline for spaceflight biology with cross-study generalization and MLflow-tracked reproducibility.
-
