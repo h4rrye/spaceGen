@@ -16,3 +16,19 @@ The practical payoff is swappability. Your pipeline logic stays the same whether
 
 ____
 
+
+
+### Datasets
+
+**NASA Open Science Data Repository (OSDR)** — that's the official name of the platform.
+
+The specific mission is **RRRM-1 / Rodent Research-8 (RR-8)**, and the datasets are from the GeneLab data processing pipeline within OSDR. For your logs, something like:
+
+"Source: NASA OSDR (osdr.nasa.gov), RRRM-1/RR-8 mission, 10X Genomics scRNA-seq, datasets OSD-910 (spleen), OSD-905 (liver), OSD-918 (blood)"
+
+1. **OSD-910 (Spleen)** — immune hub, richest cell type diversity, best for network analysis. Build with this first.
+2. **OSD-905 (Liver)** — metabolic tissue, connects to your earlier OSD-47 bulk work, different biology from spleen.
+3. **OSD-918 (Blood)** — circulating immune cells, bridges between spleen and liver, well-characterized cell markers for easy annotation.
+
+Three tissues, three biological stories: immune response (spleen), metabolic disruption (liver), systemic circulation (blood). Together they paint a picture of how spaceflight affects the whole organism
+
