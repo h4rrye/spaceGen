@@ -52,15 +52,31 @@ graph LR
 
 ## Datasets
 
-Data sourced from the **NASA Open Science Data Repository (OSDR)**, RRRM-1/Rodent Research-8 mission. All datasets are Mus musculus, 10X Genomics scRNA-seq, spaceflight vs ground control, released February 2026. Using GeneLab-processed count matrices (post-alignment) as the starting point.
+Data sourced from the **NASA Open Science Data Repository (OSDR)**. All datasets are Mus musculus, 10X Genomics scRNA-seq, spaceflight vs ground control. Using GeneLab-processed count matrices (post-alignment) as the starting point.
 
-| OSD     | Tissue | Factors          | Biology                                    |
-| ------- | ------ | ---------------- | ------------------------------------------ |
-| OSD-910 | Spleen | Spaceflight, Age | Immune cell diversity, signaling networks  |
-| OSD-905 | Liver  | Spaceflight, Age | Metabolic disruption, stress response      |
-| OSD-918 | Blood  | Spaceflight, Age | Circulating immune cells, systemic markers |
+### Original Plan (RRRM-1/RR-8 Mission)
 
-Pipeline development starts with spleen (OSD-910) for its rich immune cell type diversity, then extends to liver and blood for cross-tissue comparison.
+The original plan was to use RRRM-1/Rodent Research-8 datasets released February 2026:
+
+| OSD     | Tissue | Factors          | Biology                                    | Status                          |
+| ------- | ------ | ---------------- | ------------------------------------------ | ------------------------------- |
+| OSD-910 | Spleen | Spaceflight, Age | Immune cell diversity, signaling networks  | Raw data only (no processed)    |
+| OSD-905 | Liver  | Spaceflight, Age | Metabolic disruption, stress response      | Raw data only (no processed)    |
+| OSD-918 | Blood  | Spaceflight, Age | Circulating immune cells, systemic markers | Raw data only (no processed)    |
+
+**Issue:** GeneLab has not yet published processed scRNAseq count matrices for these datasets. Only raw FASTQs, metadata, and QC reports are available.
+
+### Current Implementation (RR-3 Mission)
+
+To build and test the pipeline architecture, we're starting with OSD-352 from the Rodent Research-3 mission, which has processed count matrices available:
+
+| OSD     | Tissue | Factors          | Biology                                    | Status                          |
+| ------- | ------ | ---------------- | ------------------------------------------ | ------------------------------- |
+| OSD-352 | Brain  | Spaceflight      | Neural response, multi-omics integration   | Processed data available        |
+
+**Rationale:** The hexagonal architecture allows us to develop the core pipeline logic against OSD-352's processed data. When RRRM-1 processed files become available, we simply swap the data source adapter without touching core logic. This approach validates the architecture while making progress on pipeline development.
+
+**Future Migration:** Once OSD-910, OSD-905, and OSD-918 processed data is released, we'll extend the pipeline to handle multi-tissue cross-comparison as originally planned.
 
 ------
 
@@ -90,7 +106,9 @@ The **modeling** stage trains classifiers (elastic net, XGBoost) to predict spac
 
 ## Current Status
 
-Project is in active development. Conda environment created, datasets identified. Starting with data exploration and ingestion of OSD-910 (spleen) count matrices into the bronze layer. Architecture will be built incrementally around working code.
+Project is in active development. Conda environment created, datasets identified. Starting with data exploration and ingestion of OSD-352 (brain) count matrices into the bronze layer. Architecture will be built incrementally around working code.
+
+See `PROJECT_LOG.md` for detailed development history and decision tracking.
 
 ------
 
