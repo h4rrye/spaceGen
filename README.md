@@ -12,6 +12,8 @@ The pipeline performs QC, normalization, clustering, cell type annotation, diffe
 
 The codebase uses hexagonal (ports and adapters) architecture to separate core bioinformatics and ML logic from I/O and infrastructure. The same pipeline runs locally against Parquet files during development and can be pointed at cloud storage by swapping adapters, with no changes to core logic. Data flows through a bronze/silver/gold medallion architecture, and all experiments are tracked with MLflow.
 
+The development dataset (OSD-352) is a single-nucleus multiome study: each nucleus has both RNA-seq and ATAC-seq measured simultaneously. The current pipeline focuses on the RNA modality. The gold layer is built around MuData (Muon's multi-modal container) so that the ATAC modality can be added as a second phase without refactoring existing code. See the **Multiome Extension** section for details.
+
 ------
 
 ## Portfolio Context
@@ -70,13 +72,27 @@ The original plan was to use RRRM-1/Rodent Research-8 datasets released February
 
 To build and test the pipeline architecture, we're starting with OSD-352 from the Rodent Research-3 mission, which has processed count matrices available:
 
-| OSD     | Tissue | Factors          | Biology                                    | Status                          |
-| ------- | ------ | ---------------- | ------------------------------------------ | ------------------------------- |
-| OSD-352 | Brain  | Spaceflight      | Neural response, multi-omics integration   | Processed data available        |
+| OSD     | Tissue | Data type               | Biology                                  | Status                   |
+| ------- | ------ | ----------------------- | ---------------------------------------- | ------------------------ |
+| OSD-352 | Brain  | snMultiome (RNA + ATAC) | Neural response, multi-omics integration | Processed data available |
 
-**Rationale:** The hexagonal architecture allows us to develop the core pipeline logic against OSD-352's processed data. When RRRM-1 processed files become available, we simply swap the data source adapter without touching core logic. This approach validates the architecture while making progress on pipeline development.
+OSD-352 is a single-nucleus multiome dataset: RNA-seq and ATAC-seq were captured from the same nucleus using 10X Genomics Single Cell Multiome ATAC + Gene Expression. Both modalities have processed matrices available via OSDR and the companion Mendeley Data deposit (DOI: 10.17632/fjxrcbh672.1). The study is published in Nature Communications (Masarapu et al., 2024).
+
+**Rationale:** The current pipeline focuses on the RNA modality. The gold layer uses MuData (Muon) as its container so the ATAC modality can be added as a second phase without changing existing core logic. When RRRM-1 processed files become available, we swap the data source adapter without touching core code.
 
 **Future Migration:** Once OSD-910, OSD-905, and OSD-918 processed data is released, we'll extend the pipeline to handle multi-tissue cross-comparison as originally planned.
+
+------
+
+## Multiome Extension (Phase Two)
+
+OSD-352 contains both RNA and ATAC data from the same nuclei, which aligns directly with the portfolio's broader theme of connecting chromatin structure and accessibility to gene expression. The ATAC extension is a planned second phase after the RNA pipeline is complete.
+
+**Why phase two and not now:** The ATAC modality requires a separate processing path (LSI dimensionality reduction, peak-barcode matrix ingestion, motif enrichment, peak-to-gene linkage). Adding both simultaneously would delay initial completion and mix concerns during early development.
+
+**How the architecture supports it:** The gold layer stores data in a `MuData` object rather than a plain `AnnData`. RNA-only currently means `MuData` with one modality (`rna`) populated. Adding ATAC later means writing a new bronze adapter for the peak-barcode matrix, a new silver path for ATAC QC and LSI reduction, and populating the `atac` modality in the existing `MuData` at the gold layer. None of this touches RNA core logic. Ports stay the same. The extension is additive by design.
+
+**Portfolio significance:** The completed multiome pipeline would connect chromatin accessibility (as in ChromApipe) to gene expression at single-cell resolution under spaceflight conditions, making spaceGen the synthesis point of the entire portfolio arc.
 
 ------
 

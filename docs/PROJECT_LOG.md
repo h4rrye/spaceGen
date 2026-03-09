@@ -141,3 +141,30 @@ spaceGen/
 ---
 
 *Log format: YYYY-MM-DD: Section Title — brief description of changes, decisions, and next steps*
+
+---
+
+## 2026-03-09: Multiome Dataset Discovery and Phase Two Decision
+
+### OSD-352 is a Full Multiome Dataset
+While reviewing the dataset, identified that OSD-352 is not RNA-only. The Masarapu et al. 2024 (Nature Communications) study used 10X Genomics Single Cell Multiome ATAC + Gene Expression, capturing RNA and ATAC from the same nuclei. Both modalities have processed matrices available:
+- RNA: `GLDS-352_snRNA-Seq_filtered_feature_bc_matrix.h5` (already downloaded, 288 MB)
+- ATAC: peak-barcode matrix available via OSDR and Mendeley Data (DOI: 10.17632/fjxrcbh672.1)
+- Analysis code: https://github.com/giacomellolab/NASA_RR3_Brain (Seurat/Signac in R)
+
+### Decision: RNA-First, ATAC as Phase Two
+
+**Rationale:**
+1. Adding both modalities simultaneously would delay mid-March target and mix concerns during early architecture development
+2. The hexagonal architecture supports additive extension: ATAC requires a new adapter and silver path, but zero changes to RNA core logic
+3. Documenting the extension path explicitly in the README demonstrates architectural foresight
+
+**Key design decision made now:** Gold layer will use `MuData` (Muon) as its container instead of plain `AnnData`. RNA-only means `MuData` with one modality (`rna`) populated. When ATAC is added, the `atac` modality slots in without refactoring.
+
+### Portfolio Alignment
+OSD-352 being multiome strengthens the portfolio arc: GenBrowser (structure) → ChromApipe (bulk chromatin accessibility) → spaceGen (single-cell RNA now, RNA+ATAC in phase two). The completed multiome version makes spaceGen the synthesis point connecting all three layers of the biology.
+
+### Next Steps
+1. Proceed with bronze layer ingestion for RNA `.h5` format
+2. Keep `MuData` in mind when designing gold layer data structures
+3. Document ATAC extension path in code comments as relevant sections are built
