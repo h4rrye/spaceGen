@@ -260,3 +260,10 @@ sc.tl.rank_genes_groups(adata, groupby='leiden', method='wilcoxon')
 ---
 
 *Last updated: 2026-03-09*
+
+______
+
+- we look at the mitochondrial content (gene expression) because, high mitochondrial gene expression often indicates stressed or dying cells in single-cell data.
+  - Healthy cells: typically <5-10% mitochondrial content
+  - Dying/stressed cells: often >20% mitochondrial content
+  - Helps identify low-quality cells to filter out in silver layer

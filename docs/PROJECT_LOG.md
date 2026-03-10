@@ -221,9 +221,29 @@ The 13:1 ratio between largest (F1) and smallest (F2) samples could affect:
 - `notebooks/01_explore_osd352.ipynb` — completed initial exploration with condition mapping and QC visualization
 - `docs/PROJECT_LOG.md` — this entry
 
+### Mitochondrial Gene Analysis
+
+**Key Finding:** Space Flight samples show elevated mitochondrial gene percentages compared to Ground Control:
+- Both conditions: Median ~0.1-0.2% (healthy range)
+- Space Flight: Notable tail extending to ~30% (stressed/dying cells)
+- Ground Control: Tighter distribution, fewer high-mt cells
+- Mean: 0.14% overall (within normal range for snRNA-seq)
+
+**Biological Interpretation:**
+- Elevated mitochondrial content indicates cellular stress
+- Spaceflight appears to induce metabolic dysfunction in brain cells
+- Some cells may be apoptotic or low-quality
+- This is a real biological signal, not just technical artifact
+
+**QC Implications for Silver Layer:**
+- Standard threshold: Filter cells with >5% mitochondrial content
+- May need condition-aware thresholds (more lenient for Flight samples to avoid losing real biology)
+- Alternative: Keep all cells, add `high_mt` flag for downstream analysis
+- Consider this as a feature for ML classifier (stress signature)
+
 ### Next Steps
-1. Calculate mitochondrial gene percentage (additional QC metric)
-2. Document QC thresholds for silver layer filtering
+1. ✅ Calculate mitochondrial gene percentage (additional QC metric)
+2. Document QC thresholds for silver layer filtering (consider condition-aware approach)
 3. Design bronze layer schema (provenance metadata structure)
 4. Implement `LocalH5Reader` adapter for 10X HDF5 ingestion
 5. Create bronze layer ingestion notebook (`02_bronze_ingestion.ipynb`)
