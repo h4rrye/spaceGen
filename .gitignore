@@ -22,3 +22,6 @@ data/
 
 # Mac
 .DS_Store
+
+# Kiro IDE
+.kiro/

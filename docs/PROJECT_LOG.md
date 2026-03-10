@@ -168,3 +168,62 @@ OSD-352 being multiome strengthens the portfolio arc: GenBrowser (structure) →
 1. Proceed with bronze layer ingestion for RNA `.h5` format
 2. Keep `MuData` in mind when designing gold layer data structures
 3. Document ATAC extension path in code comments as relevant sections are built
+
+---
+
+## 2026-03-10: OSD-352 Data Exploration Complete
+
+### Sample Mapping Verified
+Successfully mapped cell barcode suffixes to sample names using cell count matching between metadata and HDF5 file:
+
+**Mapping (suffix → sample → condition):**
+- Suffix 1 (1,140 cells) → RR3_BRN_FLT_F2 → Space Flight
+- Suffix 2 (5,333 cells) → RR3_BRN_FLT_F7 → Space Flight
+- Suffix 3 (5,960 cells) → RR3_BRN_GC_G8 → Ground Control
+- Suffix 4 (4,622 cells) → RR3_BRN_GC_G9 → Ground Control
+- Suffix 5 (15,188 cells) → RR3_BRN_FLT_F1 → Space Flight
+
+**Total:** 32,243 cells across 5 samples (3 Flight, 2 Ground Control)
+
+### Data Characteristics
+
+**Gene Metadata:**
+- 32,285 genes (mm10 genome)
+- All features are "Gene Expression" type
+- Ensembl gene IDs with genomic intervals
+- Includes non-coding RNAs (5p/3p markers present)
+
+**QC Metrics (Initial):**
+- Median UMI counts: ~1,500-2,000 per cell
+- Median genes detected: ~500-2,000 per cell
+- Range: 31-9,553 genes, 33-74,170 UMI counts
+- Some high-count outliers (potential doublets or high-quality cells)
+
+**Key Observations:**
+1. Similar QC distributions between Space Flight and Ground Control conditions
+2. Significant sample imbalance: F1 has 15k cells (~47% of dataset), F2 has only 1k cells (~3.5%)
+3. This is snRNA-seq (nuclear RNA), so lower counts than whole-cell RNA-seq is expected
+4. No obvious batch effects visible in initial QC plots
+
+### Sample Imbalance Considerations
+The 13:1 ratio between largest (F1) and smallest (F2) samples could affect:
+- Downstream clustering (F1 may dominate cluster composition)
+- Differential expression power (unequal sample sizes)
+- ML classifier training (need stratified sampling)
+
+**Mitigation strategies to consider:**
+- Downsample F1 for balanced analysis
+- Use sample-aware normalization
+- Stratify train/test splits by sample, not just condition
+- Weight samples in classifier training
+
+### Files Updated
+- `notebooks/01_explore_osd352.ipynb` — completed initial exploration with condition mapping and QC visualization
+- `docs/PROJECT_LOG.md` — this entry
+
+### Next Steps
+1. Calculate mitochondrial gene percentage (additional QC metric)
+2. Document QC thresholds for silver layer filtering
+3. Design bronze layer schema (provenance metadata structure)
+4. Implement `LocalH5Reader` adapter for 10X HDF5 ingestion
+5. Create bronze layer ingestion notebook (`02_bronze_ingestion.ipynb`)
