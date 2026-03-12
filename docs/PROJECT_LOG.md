@@ -243,7 +243,66 @@ The 13:1 ratio between largest (F1) and smallest (F2) samples could affect:
 
 ### Next Steps
 1. ✅ Calculate mitochondrial gene percentage (additional QC metric)
-2. Document QC thresholds for silver layer filtering (consider condition-aware approach)
-3. Design bronze layer schema (provenance metadata structure)
-4. Implement `LocalH5Reader` adapter for 10X HDF5 ingestion
-5. Create bronze layer ingestion notebook (`02_bronze_ingestion.ipynb`)
+2. ✅ Document QC thresholds for silver layer filtering (consider condition-aware approach)
+3. ✅ Design bronze layer schema (provenance metadata structure)
+4. ✅ Implement bronze layer ingestion notebook (`02_bronze_ingestion.ipynb`)
+5. Begin silver layer QC and normalization
+
+---
+
+## 2026-03-12: Bronze Layer Ingestion Complete
+
+### Bronze Layer Implementation
+Created `notebooks/02_bronze_ingestion.ipynb` with step-by-step implementation following learning-focused approach. Notebook implements minimal transformations with provenance tracking.
+
+**Transformations Applied:**
+1. Made gene names unique (resolved Scanpy duplicate gene warning)
+2. Added 8 provenance metadata fields to cell observations
+3. Saved data in Parquet + HDF5 format with Hive-style partitioning
+
+**Provenance Metadata Added:**
+- `ingest_date`: 2026-03-12 (ingestion timestamp)
+- `source_file`: Original HDF5 filename
+- `dataset_id`: OSD-352
+- `organism`: Mus musculus
+- `tissue`: brain
+- `technology`: 10X Chromium snRNA-seq
+- `genome_build`: mm10
+- `processing_pipeline`: GeneLab scRNA-seq
+
+**Output Structure:**
+```
+data/bronze/osd352_brain/ingest_date=2026-03-12/
+├── obs.parquet    # Cell metadata (32,243 cells, 14 columns)
+├── var.parquet    # Gene metadata (32,285 genes, 5 columns)
+└── X.h5           # Sparse count matrix (~50 MB, 97.5% sparse)
+```
+
+**Sparse Matrix Storage:**
+- Format: CSR (Compressed Sparse Row) stored in HDF5
+- Components: `data` (non-zero values), `indices` (column indices), `indptr` (row pointers), `shape` (dimensions)
+- Compression: gzip for efficient storage
+- Size: ~50 MB compressed vs ~8 GB if stored dense
+
+### Code Style Improvements
+Refactored complex one-liners to explicit multi-step code per project rules:
+- Path operations broken into clear steps
+- File size calculations using intermediate variables
+- Sparse matrix saving with explicit component extraction
+- Improved readability for learning-focused development
+
+### Documentation Updates
+- `docs/data_schema.md`: Added CSR format details and example statistics
+- `docs/directory_structure.md`: Updated with actual bronze layer files and sizes
+- `docs/PROJECT_LOG.md`: This entry
+
+### Files Created/Modified
+- `notebooks/02_bronze_ingestion.ipynb` — bronze layer ingestion implementation
+- `data/bronze/osd352_brain/ingest_date=2026-03-12/` — bronze layer data files
+- `.gitignore` — updated with Python package patterns
+
+### Next Steps
+1. Design silver layer schema (QC thresholds, normalization strategy)
+2. Implement QC filtering (mitochondrial %, gene counts, UMI counts)
+3. Apply normalization and HVG selection
+4. Create silver layer ingestion notebook (`03_silver_qc.ipynb`)

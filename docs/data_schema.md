@@ -47,11 +47,22 @@ data/bronze/{dataset}_{tissue}/ingest_date={YYYY-MM-DD}/
 
 ### X.h5 (Count Matrix)
 
-**Format:** HDF5 sparse matrix
+**Format:** HDF5 sparse matrix stored in CSR (Compressed Sparse Row) format
 - **Shape:** (n_cells, n_genes)
 - **Type:** Sparse CSR matrix (scipy.sparse.csr_matrix)
 - **Values:** Raw UMI counts (integers)
-- **Storage:** Compressed HDF5 for efficient sparse data storage
+- **Storage:** Compressed HDF5 with gzip compression
+
+**CSR Components:**
+- `data` (array) - Non-zero values from the sparse matrix
+- `indices` (array) - Column indices for each non-zero value
+- `indptr` (array) - Index pointers marking row boundaries
+- `shape` (tuple) - Matrix dimensions (n_cells, n_genes)
+
+**Example for OSD-352:**
+- Shape: (32,243 cells, 32,285 genes)
+- Sparsity: ~97.5% zeros (typical for scRNA-seq)
+- File size: ~50 MB compressed (vs ~8 GB if stored dense)
 
 ---
 

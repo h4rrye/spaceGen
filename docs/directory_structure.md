@@ -2,7 +2,7 @@
 
 Living document tracking the project's directory structure as it evolves.
 
-**Last Updated:** 2026-03-10
+**Last Updated:** 2026-03-12
 
 ---
 
@@ -34,10 +34,11 @@ spaceGen/
 │   │
 │   └── bronze/                     # Bronze layer (raw + provenance)
 │       └── osd352_brain/
-│           └── ingest_date=2026-03-10/
-│               ├── obs.parquet     # Cell metadata
-│               ├── var.parquet     # Gene metadata
-│               └── X.h5            # Sparse count matrix
+│           ├── ingest_date=2026-03-10/  # Initial ingestion (empty)
+│           └── ingest_date=2026-03-12/  # Current bronze data
+│               ├── obs.parquet     # Cell metadata (32,243 cells)
+│               ├── var.parquet     # Gene metadata (32,285 genes)
+│               └── X.h5            # Sparse count matrix (~50 MB)
 │
 ├── docs/                           # Documentation
 │   ├── PROJECT_LOG.md              # Development log and decisions
