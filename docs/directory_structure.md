@@ -2,7 +2,7 @@
 
 Living document tracking the project's directory structure as it evolves.
 
-**Last Updated:** 2026-03-12
+**Last Updated:** 2026-04-12
 
 ---
 
@@ -40,6 +40,13 @@ spaceGen/
 │               ├── var.parquet     # Gene metadata (32,285 genes)
 │               └── X.h5            # Sparse count matrix (~50 MB)
 │
+│   └── silver/                     # Silver layer (QC + normalized)
+│       └── osd352_brain_v1_qc.h5ad # AnnData: 27,968 cells, normalized
+│
+│   └── gold/                       # Gold layer (annotated + DE)
+│       ├── osd352_brain_v1_annotated.h5ad  # 67 cell types, 22 clusters (654 MB)
+│       └── osd352_brain_v1_de_results.parquet  # DE results (3.2 MB)
+│
 ├── docs/                           # Documentation
 │   ├── PROJECT_LOG.md              # Development log and decisions
 │   ├── minutiae.md                 # Technical reference
@@ -50,7 +57,9 @@ spaceGen/
 ├── notebooks/                      # Jupyter notebooks
 │   ├── .gitkeep
 │   ├── 01_explore_osd352.ipynb     # Initial data exploration
-│   └── 02_bronze_ingestion.ipynb   # Bronze layer ingestion
+│   ├── 02_bronze_ingestion.ipynb   # Bronze layer ingestion
+│   └── 03_silver_qc.ipynb          # Silver layer QC and normalization
+│   └── 04_gold_clustering.ipynb    # Gold layer clustering, annotation, DE
 │
 ├── reports/                        # Analysis outputs and reports
 │   └── .gitkeep
@@ -99,14 +108,14 @@ src/spacegen/
 - **Purpose:** Raw data + provenance metadata
 
 ### Silver Layer (Planned)
-- **Path:** `data/silver/{dataset}_{tissue}_v{version}/`
+- **Path:** `data/silver/`
 - **Files:** `{dataset}_{tissue}_v{version}_qc.h5ad`
-- **Purpose:** QC-filtered, normalized, versioned
+- **Purpose:** QC-filtered, normalized, HVGs flagged, PCA/UMAP embeddings
 
-### Gold Layer (Planned)
-- **Path:** `data/gold/{dataset}_{tissue}_v{version}/`
-- **Files:** `{dataset}_{tissue}_v{version}_annotated.h5ad`
-- **Purpose:** Clustered, annotated, analysis-ready
+### Gold Layer
+- **Path:** `data/gold/`
+- **Files:** `{dataset}_{tissue}_v{version}_annotated.h5ad`, `{dataset}_{tissue}_v{version}_de_results.parquet`
+- **Purpose:** Clustered, cell type annotated, DE results, analysis-ready
 
 ### Models (Planned)
 - **Path:** MLflow artifact store

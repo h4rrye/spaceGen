@@ -68,13 +68,135 @@ data/bronze/{dataset}_{tissue}/ingest_date={YYYY-MM-DD}/
 
 ## Silver Layer
 
-*To be documented after implementation*
+### Structure
+```
+data/silver/
+  └── osd352_brain_v1_qc.h5ad    # Complete AnnData object
+```
+
+### Format: AnnData (.h5ad)
+
+Single file containing all data and metadata in AnnData format.
+
+**adata.X** — Normalized expression matrix (sparse CSR)
+- Shape: (27,968 cells, 32,285 genes)
+- Values: Total count normalized (10k per cell) + log1p transformed
+
+**adata.raw** — Raw counts preserved for DE analysis
+- Shape: (27,968 cells, 32,285 genes)
+- Values: Original UMI counts (pre-normalization)
+
+**adata.obs** — Cell metadata columns:
+- `ingest_date` (str) — Bronze layer provenance
+- `source_file` (str) — Original source filename
+- `dataset_id` (str) — Dataset identifier (OSD-352)
+- `organism` (str) — Mus musculus
+- `tissue` (str) — brain
+- `technology` (str) — 10X Chromium snRNA-seq
+- `genome_build` (str) — mm10
+- `processing_pipeline` (str) — GeneLab scRNA-seq
+- `sample_id` (str) — Barcode suffix (1-5)
+- `sample_name` (str) — Sample identifier (e.g., RR3_BRN_FLT_F1)
+- `condition` (str) — Space Flight or Ground Control
+- `n_genes_by_counts` (int) — Genes detected per cell
+- `total_counts` (float) — Total UMI counts per cell
+- `pct_counts_mt` (float) — Mitochondrial gene percentage
+
+**adata.var** — Gene metadata columns:
+- `gene_ids` (str) — Ensembl gene IDs
+- `feature_types` (str) — Gene Expression
+- `genome` (str) — mm10
+- `interval` (str) — Genomic coordinates
+- `mt` (bool) — Mitochondrial gene flag
+- `highly_variable` (bool) — HVG flag (2,000 genes selected)
+
+**adata.obsm** — Embeddings:
+- `X_pca` — PCA coordinates (50 components, computed on HVGs)
+- `X_umap` — UMAP coordinates (2D)
+
+**adata.layers** — (empty after file size optimization; scaled data dropped, PCA/UMAP preserved in obsm)
+
+### QC Thresholds Applied (Condition-Aware)
+
+| Filter | Ground Control | Space Flight | Rationale |
+|--------|---------------|--------------|-----------|
+| Min genes | 200 | 200 | Removes empty/low-quality droplets |
+| Min UMI | 500 | 500 | Removes debris (standard for snRNA-seq) |
+| Max UMI | 50,000 | 50,000 | Removes likely doublets |
+| Max mt% | 5% | 10% | Flight: preserves stressed cells (real biology) |
+
+**Filtering result:** 32,243 → 27,968 cells (13.3% removed)
 
 ---
 
 ## Gold Layer
 
-*To be documented after implementation*
+### Structure
+```
+data/gold/
+  ├── osd352_brain_v1_annotated.h5ad    # Annotated AnnData object
+  └── osd352_brain_v1_de_results.parquet # DE results table
+```
+
+### Format: AnnData (.h5ad) — osd352_brain_v1_annotated.h5ad
+
+Extends silver layer with clustering, cell type annotations, and DE results.
+
+**adata.X** — Normalized expression matrix (sparse CSR, same as silver)
+
+**adata.obs** — Cell metadata (all silver columns plus):
+- `leiden_0.5` (str) — Leiden cluster ID (22 clusters, resolution=0.5)
+- `predicted_labels` (str) — CellTypist per-cell prediction
+- `over_clustering` (str) — CellTypist over-clustering labels
+- `majority_voting` (str) — CellTypist consensus label (cluster-level majority vote)
+- `cell_type` (str) — Final cell type label (from majority_voting)
+
+**adata.var** — Gene metadata (same as silver)
+
+**adata.obsm** — Embeddings (same as silver: X_pca, X_umap)
+
+**adata.uns** — Unstructured metadata:
+- `de_spaceflight_vs_ground` — DE analysis metadata (method, comparison, cell types tested)
+
+### Annotation Details
+- **Model:** CellTypist Mouse_Whole_Brain.pkl
+- **Method:** Automated prediction + majority voting (cluster-level consensus)
+- **Cell types found:** 67
+- **Validation:** Canonical brain markers (21/21 present, validated via dotplot)
+
+### DE Results — osd352_brain_v1_de_results.parquet
+
+**Columns:**
+- `names` (str) — Gene name
+- `scores` (float) — Wilcoxon test statistic
+- `logfoldchanges` (float) — Log fold change (Space Flight vs Ground Control)
+- `pvals` (float) — Raw p-value
+- `pvals_adj` (float) — Adjusted p-value (Benjamini-Hochberg)
+- `cell_type` (str) — Cell type tested
+
+**Details:**
+- Method: Wilcoxon rank-sum test
+- Comparison: Space Flight vs Ground Control (within each cell type)
+- Cell types tested: 11 (minimum 50 cells per condition)
+- Total gene-celltype pairs: 355,135
+
+### Key Findings
+
+**Spaceflight-enriched cell populations:**
+- Microglia: 4.4x enriched in spaceflight (neuroinflammation)
+- OPCs: 4.1x enriched (myelin remodeling)
+- VLMCs: 3.7x enriched (vascular response)
+
+**Recurring DE signatures:**
+- Malat1 upregulated across most cell types (stress-responsive lncRNA, known spaceflight biomarker)
+- Gm42418 downregulated across types (ribosomal RNA processing, translational stress)
+
+**Cell-type specific:**
+- Microglia: C1qa, C1qb downregulated (complement pathway suppression)
+- Oligodendrocytes: Heat shock proteins (Hsph1, Hsp90ab1, Cryab) downregulated
+- CB Granule neurons: Pcp2 strongly downregulated (cerebellar function/motor coordination)
+- Bergmann glia: Zbtb16, Sparc downregulated (neuronal differentiation, synaptic plasticity)
+- Astrocytes: Aldoc, Atp1b2 downregulated (metabolic and ion transport disruption)
 
 ---
 

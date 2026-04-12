@@ -122,9 +122,9 @@ The **modeling** stage trains classifiers (elastic net, XGBoost) to predict spac
 
 ## Current Status
 
-Project is in active development. Conda environment created, datasets identified. Starting with data exploration and ingestion of OSD-352 (brain) count matrices into the bronze layer. Architecture will be built incrementally around working code.
+Bronze, silver, and gold layers complete for OSD-352 brain tissue. Gold layer includes Leiden clustering (22 clusters), CellTypist annotation (67 cell types, validated with canonical markers), and differential expression analysis (spaceflight vs ground control per cell type). Key findings include Malat1 as a pan-cell-type spaceflight biomarker, complement pathway suppression in microglia, and 4.4x microglial enrichment in spaceflight samples. Moving to feature engineering and ML classifier.
 
-See `PROJECT_LOG.md` for detailed development history and decision tracking.
+See `docs/PROJECT_LOG.md` for detailed development history and decision tracking.
 
 ------
 

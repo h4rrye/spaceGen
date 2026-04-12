@@ -306,3 +306,129 @@ Refactored complex one-liners to explicit multi-step code per project rules:
 2. Implement QC filtering (mitochondrial %, gene counts, UMI counts)
 3. Apply normalization and HVG selection
 4. Create silver layer ingestion notebook (`03_silver_qc.ipynb`)
+
+---
+
+## 2026-03-25: Silver Layer QC and Normalization Complete
+
+### Condition-Aware QC Filtering
+Implemented condition-aware mitochondrial thresholds to preserve biologically relevant stressed cells in Space Flight samples. A uniform 5% cutoff would remove stressed-but-real cells from Flight samples, losing biological signal.
+
+**Thresholds:**
+| Filter | Ground Control | Space Flight |
+|--------|---------------|--------------|
+| Min genes | 200 | 200 |
+| Min UMI | 500 | 500 |
+| Max UMI | 50,000 | 50,000 |
+| Max mt% | 5% | 10% |
+
+**Results:**
+- Cells before QC: 32,243
+- Cells after QC: 27,968 (13.3% removed)
+- Space Flight: 21,661 → 17,972 (17% removed — higher due to stressed cells)
+- Ground Control: 10,582 → 9,996 (5.5% removed — cleaner samples)
+
+### Normalization Pipeline
+1. Total count normalization (scale to 10,000 per cell)
+2. Log1p transform (compress dynamic range)
+3. HVG selection: 2,000 genes (seurat_v3 method via scikit-misc)
+4. Scaling (zero mean, unit variance, clipped at 10)
+5. PCA (50 components on HVGs)
+6. UMAP (2D embedding)
+
+Raw counts preserved in `adata.raw` for downstream DE analysis.
+
+### Batch Effect Diagnostic
+UMAP visualization colored by condition vs sample_id:
+- Good sample mixing in main clusters → no batch correction needed
+- Spaceflight-enriched clusters visible in bottom-right of UMAP → real biological signal
+- Sample G9 (Ground Control) clusters somewhat separately but QC metrics are normal — biological, not technical
+
+**Decision:** No batch correction applied. Samples mix well, separation is biological.
+
+### Sample G9 Investigation
+Sample RR3_BRN_GC_G9 clusters separately in UMAP. QC metrics compared:
+- Median genes: 909 (vs 1,010-1,286 for others)
+- Median UMI: 1,454 (vs 1,758-2,269 for others)
+- Mt%: 0.08% (normal range)
+
+Slightly lower counts but within acceptable range. Kept in dataset — likely biological variation between individual mice.
+
+### File Size Issue
+`sc.pp.scale()` converted sparse matrix to dense (~7 GB). Stored scaled data in `adata.layers['scaled']` and saved with gzip compression to reduce file size.
+
+### Files Created/Modified
+- `notebooks/03_silver_qc.ipynb` — silver layer QC and normalization
+- `data/silver/osd352_brain_v1_qc.h5ad` — silver layer output
+- `pyproject.toml` — added scikit-misc dependency
+- `docs/data_schema.md` — silver layer schema documented
+- `docs/directory_structure.md` — updated with silver layer
+- `docs/spaceGen_notes.md` — condition-aware QC rationale
+- `docs/PROJECT_LOG.md` — this entry
+
+### Next Steps
+1. ✅ Address silver layer file size (drop scaled layer, re-save — 654 MB)
+2. ✅ Begin gold layer: Leiden clustering, cell type annotation
+3. ✅ Differential expression analysis (spaceflight vs ground per cell type)
+4. Feature engineering for ML classifier
+5. Phase 3 (future): Autonomous optimization with GLM-5.1 — see `docs/spaceGen_notes.md`
+
+---
+
+## 2026-04-12: Gold Layer Complete — Clustering, Annotation & DE
+
+### Leiden Clustering
+- Resolution: 0.5
+- Clusters found: 22
+- Largest: Cluster 0 (11,890 cells), Smallest: Cluster 21 (51 cells)
+- Spaceflight-dominant clusters: 7 (96%), 17 (95%), 13 (95%), 2 (95%), 8 (93%)
+- Ground control-enriched: Cluster 4 (65% GC)
+
+### CellTypist Automated Annotation
+- Model: Mouse_Whole_Brain.pkl (CellTypist v1.7.1)
+- Cell types identified: 67
+- Method: Automated prediction + majority voting (cluster-level consensus)
+- Dominant population: CB Granule Glut (13,305 cells — cerebellar granule neurons)
+- Major glial types: Oligo NN (2,051), Bergmann NN, Astro-NT NN, OPC NN, Microglia NN
+
+### Marker Gene Validation
+All 21 canonical brain markers present and validated against CellTypist labels:
+- Pan-neuronal (Rbfox3, Snap25, Syt1) → all neuron types
+- Excitatory (Slc17a7, Neurod6) → Glut-labeled cells only
+- Inhibitory (Gad1, Gad2, Slc32a1) → Gaba-labeled cells only
+- Astrocytes (Gfap, Aqp4, Aldh1l1) → Astro subtypes + Bergmann
+- Oligodendrocytes (Mbp, Plp1, Mog) → Oligo NN
+- OPCs (Pdgfra, Cspg4) → OPC NN
+- Microglia (Cx3cr1, P2ry12, Tmem119) → Microglia NN
+- Endothelial (Cldn5, Pecam1) → ABC NN, VLMC NN
+
+### Differential Expression Analysis
+- Method: Wilcoxon rank-sum test (Space Flight vs Ground Control per cell type)
+- Cell types tested: 11 (minimum 50 cells per condition)
+- Total gene-celltype pairs: 355,135
+
+**Spaceflight-enriched populations:**
+- Microglia: 4.4x enriched (74 GC → 325 Flight)
+- OPCs: 4.1x enriched (76 → 315)
+- VLMCs: 3.7x enriched (51 → 191)
+
+**Key DE findings:**
+- Malat1 upregulated across most cell types — stress-responsive lncRNA, known spaceflight biomarker
+- Microglia: C1qa, C1qb downregulated (complement pathway suppression)
+- Oligodendrocytes: Heat shock proteins downregulated (Hsph1, Hsp90ab1, Cryab)
+- CB Granule: Pcp2 strongly downregulated (logFC -3.3, cerebellar/motor coordination)
+- Bergmann glia: Zbtb16, Sparc downregulated (neuronal differentiation)
+- Astrocytes: Aldoc, Atp1b2 downregulated (metabolic disruption)
+
+### Files Created/Modified
+- `notebooks/04_gold_clustering.ipynb` — gold layer implementation
+- `data/gold/osd352_brain_v1_annotated.h5ad` (654 MB) — annotated AnnData
+- `data/gold/osd352_brain_v1_de_results.parquet` (3.2 MB) — DE results
+- `pyproject.toml` — added celltypist dependency
+- All docs updated
+
+### Next Steps
+1. Feature engineering for ML classifier (`05_gold_features.ipynb`)
+2. Train spaceflight classifier (elastic net, XGBoost)
+3. MLflow experiment tracking
+4. Phase 2: ATAC-seq integration
