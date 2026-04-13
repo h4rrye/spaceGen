@@ -20,11 +20,7 @@ spaceGen/
 ├── README.md                       # Project overview and documentation
 ├── pyproject.toml                  # Python project configuration and dependencies
 │
-├── conf/                           # Configuration files
-│   └── .gitkeep
-│
-├── data/                           # Data storage (gitignored except .gitkeep)
-│   ├── .gitkeep
+├── data/                           # Data storage (gitignored)
 │   ├── OSD-352/                    # Raw source data
 │   │   ├── GLDS-352_snRNA-Seq_filtered_feature_bc_matrix.h5
 │   │   ├── OSD-352_metadata_OSD-352-ISA.zip
@@ -50,8 +46,7 @@ spaceGen/
 │
 ├── docs/                           # Documentation
 │   ├── PROJECT_LOG.md              # Development log and decisions
-│   ├── minutiae.md                 # Technical reference
-│   ├── spaceGen_notes.md           # Additional notes
+│   ├── NOTES.md                    # Technical notes, findings, future plans
 │   ├── data_schema.md              # Data structure documentation
 │   └── directory_structure.md      # This file
 │

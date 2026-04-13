@@ -17,12 +17,16 @@ venv/
 # MLflow
 mlruns/
 
-# Data (important)
+# Data (large files)
 data/
+
+# Testing
+.pytest_cache/
 
 # Mac
 .DS_Store
 
-# Kiro IDE
+# IDE
 .kiro/
 .claude/
+.vscode/
