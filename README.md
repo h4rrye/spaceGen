@@ -1,133 +1,133 @@
 # spaceGen
 
-**Single-cell RNA-seq pipeline for spaceflight biology — hexagonal architecture, medallion data layers, MLflow tracking**
+Single-cell RNA-seq analysis of spaceflight-induced neurodegeneration in mouse brain — built with hexagonal architecture, medallion data layers, and MLflow experiment tracking.
 
 ------
 
-## Overview
+## Key Findings
 
-spaceGen is an ML pipeline for analyzing NASA OSDR spaceflight single-cell transcriptomics data. It processes 10X Genomics scRNA-seq from the RRRM-1/Rodent Research-8 mission to identify how spaceflight alters gene expression at single-cell resolution across multiple tissues in the same cohort of mice.
+Analysis of 27,968 single nuclei from NASA OSD-352 (Rodent Research-3, mouse brain) reveals that spaceflight induces a neurodegenerative-like molecular signature:
 
-The pipeline performs QC, normalization, clustering, cell type annotation, differential expression, and cell-cell communication network analysis using Scanpy. It classifies spaceflight vs ground control samples and identifies conserved stress-response signatures, immune dysregulation patterns, and tissue-specific molecular changes. Cross-tissue comparison reveals which spaceflight responses are systemic versus organ-specific.
+- **Neurodegenerative pathway enrichment:** Spaceflight DE genes in brainstem neurons are significantly enriched in ALS (p=1e-12), Parkinson's (p=6e-10), Huntington's (p=1e-7), and Alzheimer's (p=3e-7) KEGG pathways
+- **Microglial neuroinflammation:** Brain immune cells are 4.4x enriched in spaceflight samples, with complement cascade genes (C1qa, C1qb) suppressed
+- **Oligodendrocyte metabolic collapse:** Translation, mitochondrial ATP synthesis, and cellular respiration pathways are all downregulated in myelin-producing cells
+- **Malat1 as pan-cell-type biomarker:** The stress-responsive lncRNA Malat1 is upregulated across nearly all 67 identified cell types — a known spaceflight biomarker that validates the analysis
+- **Cerebellar motor disruption:** Pcp2 (Purkinje cell protein) is strongly downregulated (logFC -3.3), connecting to known astronaut reports of balance issues post-spaceflight
 
-The codebase uses hexagonal (ports and adapters) architecture to separate core bioinformatics and ML logic from I/O and infrastructure. The same pipeline runs locally against Parquet files during development and can be pointed at cloud storage by swapping adapters, with no changes to core logic. Data flows through a bronze/silver/gold medallion architecture, and all experiments are tracked with MLflow.
-
-The development dataset (OSD-352) is a single-nucleus multiome study: each nucleus has both RNA-seq and ATAC-seq measured simultaneously. The current pipeline focuses on the RNA modality. The gold layer is built around MuData (Muon's multi-modal container) so that the ATAC modality can be added as a second phase without refactoring existing code. See the **Multiome Extension** section for details.
+These findings are consistent across independent analyses (differential expression, ML feature importance, GO enrichment, KEGG pathways), strengthening confidence in the biological conclusions.
 
 ------
 
-## Portfolio Context
+## Pipeline Overview
 
-This is the third project in a computational biology portfolio that follows data through chromosome structure → chromatin accessibility → gene expression:
+```mermaid
+graph LR
+    A[NASA OSDR] --> B[Bronze<br/>Raw counts + provenance]
+    B --> C[Silver<br/>QC + normalization]
+    C --> D[Gold<br/>67 cell types + DE]
+    D --> E[Models<br/>Elastic Net / XGBoost]
+    D --> F[GSEA<br/>Pathway enrichment]
+    E --> G[MLflow<br/>Experiment tracking]
+    F --> G
+```
 
-- **[GenBrowser](https://h4rrye.github.io/genBrowser)** — 3D interactive chromosome visualization (Three.js/TypeScript). Maps biological metrics like GC content and surface distance onto chromosome backbone geometry.
-- **[ChromApipe](https://github.com/h4rrye/chromApipe)** — Nextflow pipeline computing Chromosome Surface Accessible Area (CSAA) from PDB structures, with parallel API annotation from Ensembl, ENCODE, and GTEx. Dataflow architecture with Docker-containerized processes deployed to AWS Batch.
-- **spaceGen** — scRNA-seq ML pipeline modeling single-cell gene expression responses to spaceflight. Hexagonal architecture with medallion data layers, network analysis, and MLflow experiment tracking.
-
-Each project demonstrates a different architectural pattern (interactive frontend, dataflow pipeline, ports-and-adapters application) and a different layer of the biology (structure, accessibility, expression).
+| Stage | Notebook | What it does |
+|-------|----------|-------------|
+| Explore | `01_explore_osd352` | Data structure, sample mapping, initial QC |
+| Bronze | `02_bronze_ingestion` | Parquet + HDF5 with provenance, Hive partitioning |
+| Silver | `03_silver_qc` | Condition-aware QC, normalization, HVGs, PCA/UMAP |
+| Gold | `04_gold_clustering` | Leiden clustering, CellTypist annotation, marker validation, DE |
+| Features | `05_gold_features` | Pseudobulk aggregation (sample × cell type), ML feature matrix |
+| Models | `06_model_training` | Elastic Net, Random Forest, XGBoost with LOSO-CV + MLflow |
+| GSEA | `07_gsea` | GO Biological Process + KEGG pathway enrichment |
 
 ------
 
 ## Architecture
 
-```mermaid
-graph LR
-    A[NASA OSDR] --> B[Bronze<br/>Raw count matrices]
-    B --> C[Silver<br/>QC + normalized]
-    C --> D[Gold<br/>Clusters + features]
-    D --> E[Models<br/>Classification]
-    D --> F[Networks<br/>Cell communication]
-    E --> G[MLflow<br/>Tracking]
-    F --> G
+The codebase follows hexagonal (ports and adapters) architecture with medallion data layers.
+
+```
+src/spacegen/
+├── core/           # Pure functions — no I/O, no side effects
+│   ├── qc.py           # Condition-aware QC filtering
+│   ├── normalization.py # Normalize, log1p, HVG selection
+│   └── features.py      # Pseudobulk aggregation, feature engineering
+├── ports/          # Abstract interfaces (DataReader, DataWriter)
+└── adapters/       # Concrete I/O (HDF5, h5ad, Parquet, JSON)
 ```
 
-**Hexagonal design:** Core logic in `src/spacegen/core/` is pure — functions take AnnData objects and dataframes in and return them out, with no file I/O or MLflow calls. Ports (`ports/interfaces.py`) define abstract contracts for data reading, writing, and experiment logging. Adapters (`adapters/`) implement those contracts for local Parquet/h5ad and MLflow. Swapping to S3 or Databricks means adding a new adapter, not touching core code.
+Core logic takes AnnData in and returns AnnData out — no file paths, no MLflow calls, no database connections. Swapping from local Parquet to S3 or Databricks means adding a new adapter, not touching core code. 18 pytest tests verify all core functions are pure and immutable.
 
 **Medallion layers:**
-
-- **Bronze:** Raw gene-cell count matrices and sample metadata from NASA OSDR, partitioned by ingest date (Hive-style)
-- **Silver:** QC-filtered cells, normalized counts, highly variable genes, doublet flags — versioned per tissue
-- **Gold:** Clustered cells with type annotations, differential expression results, network features, study-aware splits — versioned
-- **Models:** Trained classifiers and network artifacts logged to MLflow with full parameter and metric tracking
+- **Bronze:** Raw count matrices + provenance metadata, Hive-style partitioned
+- **Silver:** QC-filtered (condition-aware mt% thresholds), normalized, 2,000 HVGs
+- **Gold:** 22 Leiden clusters, 67 CellTypist cell types, DE results, ML features
 
 ------
 
-## Datasets
+## Dataset
 
-Data sourced from the **NASA Open Science Data Repository (OSDR)**. All datasets are Mus musculus, 10X Genomics scRNA-seq, spaceflight vs ground control. Using GeneLab-processed count matrices (post-alignment) as the starting point.
+Data from the **NASA Open Science Data Repository (OSDR)**, dataset OSD-352 (Rodent Research-3 mission).
 
-### Original Plan (RRRM-1/RR-8 Mission)
+| Property | Value |
+|----------|-------|
+| Organism | Mus musculus |
+| Tissue | Brain |
+| Platform | 10X Genomics snRNA-seq |
+| Cells | 32,243 raw → 27,968 after QC |
+| Genes | 32,285 |
+| Samples | 5 (3 Space Flight, 2 Ground Control) |
+| Cell types | 67 (CellTypist Mouse_Whole_Brain, validated with 21 canonical markers) |
+| Reference | Masarapu et al., Nature Communications (2024) |
 
-The original plan was to use RRRM-1/Rodent Research-8 datasets released February 2026:
-
-| OSD     | Tissue | Factors          | Biology                                    | Status                          |
-| ------- | ------ | ---------------- | ------------------------------------------ | ------------------------------- |
-| OSD-910 | Spleen | Spaceflight, Age | Immune cell diversity, signaling networks  | Raw data only (no processed)    |
-| OSD-905 | Liver  | Spaceflight, Age | Metabolic disruption, stress response      | Raw data only (no processed)    |
-| OSD-918 | Blood  | Spaceflight, Age | Circulating immune cells, systemic markers | Raw data only (no processed)    |
-
-**Issue:** GeneLab has not yet published processed scRNAseq count matrices for these datasets. Only raw FASTQs, metadata, and QC reports are available.
-
-### Current Implementation (RR-3 Mission)
-
-To build and test the pipeline architecture, we're starting with OSD-352 from the Rodent Research-3 mission, which has processed count matrices available:
-
-| OSD     | Tissue | Data type               | Biology                                  | Status                   |
-| ------- | ------ | ----------------------- | ---------------------------------------- | ------------------------ |
-| OSD-352 | Brain  | snMultiome (RNA + ATAC) | Neural response, multi-omics integration | Processed data available |
-
-OSD-352 is a single-nucleus multiome dataset: RNA-seq and ATAC-seq were captured from the same nucleus using 10X Genomics Single Cell Multiome ATAC + Gene Expression. Both modalities have processed matrices available via OSDR and the companion Mendeley Data deposit (DOI: 10.17632/fjxrcbh672.1). The study is published in Nature Communications (Masarapu et al., 2024).
-
-**Rationale:** The current pipeline focuses on the RNA modality. The gold layer uses MuData (Muon) as its container so the ATAC modality can be added as a second phase without changing existing core logic. When RRRM-1 processed files become available, we swap the data source adapter without touching core code.
-
-**Future Migration:** Once OSD-910, OSD-905, and OSD-918 processed data is released, we'll extend the pipeline to handle multi-tissue cross-comparison as originally planned.
+**Condition-aware QC:** Standard 5% mitochondrial threshold for ground control, relaxed 10% for spaceflight samples to preserve biologically relevant stressed cells. This asymmetric approach retains spaceflight biology that uniform filtering would discard.
 
 ------
 
-## Multiome Extension (Phase Two)
+## ML Classification
 
-OSD-352 contains both RNA and ATAC data from the same nuclei, which aligns directly with the portfolio's broader theme of connecting chromatin structure and accessibility to gene expression. The ATAC extension is a planned second phase after the RNA pipeline is complete.
+Spaceflight vs ground control classifier using pseudobulk features (sample × cell type aggregation to avoid pseudoreplication).
 
-**Why phase two and not now:** The ATAC modality requires a separate processing path (LSI dimensionality reduction, peak-barcode matrix ingestion, motif enrichment, peak-to-gene linkage). Adding both simultaneously would delay initial completion and mix concerns during early development.
+| Model | Accuracy | F1 | AUROC |
+|-------|----------|-----|-------|
+| Elastic Net | 0.574 | 0.646 | **0.757** |
+| Random Forest | 0.593 | 0.703 | 0.548 |
+| XGBoost | 0.593 | 0.744 | 0.440 |
 
-**How the architecture supports it:** The gold layer stores data in a `MuData` object rather than a plain `AnnData`. RNA-only currently means `MuData` with one modality (`rna`) populated. Adding ATAC later means writing a new bronze adapter for the peak-barcode matrix, a new silver path for ATAC QC and LSI reduction, and populating the `atac` modality in the existing `MuData` at the gold layer. None of this touches RNA core logic. Ports stay the same. The extension is additive by design.
+Limited accuracy is expected with n=5 biological samples. The value is in proper methodology (LOSO-CV, pseudobulk, no pseudoreplication) and feature importance analysis revealing mitochondrial stress genes (Cox8a, Ndufs5, Ndufb7) and cell type composition as top discriminators.
 
-**Portfolio significance:** The completed multiome pipeline would connect chromatin accessibility (as in ChromApipe) to gene expression at single-cell resolution under spaceflight conditions, making spaceGen the synthesis point of the entire portfolio arc.
-
-------
-
-## Pipeline Design
-
-The pipeline has four stages, each writing to a separate medallion layer.
-
-The **bronze** stage ingests processed gene-cell count matrices and metadata from NASA OSDR, storing them with study provenance and Hive-style ingest date partitioning. Data integrity is verified via MD5 checksums.
-
-The **silver** stage uses Scanpy for QC filtering (mitochondrial %, doublet removal, low-quality cells), normalization (library size correction, log transformation), highly variable gene selection, and dimensionality reduction (PCA). Batch effects are assessed and visualized.
-
-The **gold** stage performs KNN graph construction, Leiden clustering, cell type annotation, and differential expression analysis (spaceflight vs ground within each cell type). Cross-tissue gene ID alignment and feature engineering for ML classification happen here. Cell-cell communication network analysis identifies how intercellular signaling changes under spaceflight conditions. Jaccard similarity quantifies transcriptional overlap between clusters across conditions and tissues.
-
-The **modeling** stage trains classifiers (elastic net, XGBoost) to predict spaceflight exposure from single-cell features. All runs are logged to MLflow with parameters, metrics (AUROC, AUPRC, F1), and artifacts (UMAP plots, SHAP importance, confusion matrices, network visualizations).
+All experiments tracked with MLflow. Run `mlflow ui --backend-store-uri file:mlruns` from the project root to view.
 
 ------
 
-## Analysis Highlights
+## Portfolio Context
 
-- **Cell type resolution:** Identify which specific cell types (T cells, macrophages, hepatocytes, etc.) are most affected by spaceflight
-- **KNN graphs + Leiden clustering:** Graph-based cell population identification at single-cell resolution
-- **Cell-cell communication networks:** How intercellular signaling rewires under microgravity
-- **Jaccard similarity:** Quantify transcriptional overlap between spaceflight and ground clusters to find conserved vs divergent responses
-- **Cross-tissue comparison:** Systemic spaceflight signatures (shared across spleen, liver, blood) vs tissue-specific responses
+Third project in a computational biology portfolio following data through chromosome structure → chromatin accessibility → gene expression:
+
+- **[GenBrowser](https://h4rrye.github.io/genBrowser)** — 3D chromosome visualization (Three.js/TypeScript)
+- **[ChromApipe](https://github.com/h4rrye/chromApipe)** — Nextflow pipeline for Chromosome Surface Accessible Area (AWS Batch)
+- **spaceGen** — scRNA-seq ML pipeline for spaceflight biology (hexagonal architecture, MLflow)
+
+Each project demonstrates a different architectural pattern and a different layer of the biology.
 
 ------
 
-## Current Status
+## Tech Stack
 
-End-to-end pipeline complete for OSD-352 brain tissue: bronze → silver → gold → model → GSEA. Key discovery: spaceflight DE genes in brainstem neurons are significantly enriched in neurodegenerative disease pathways (ALS, Parkinson's, Alzheimer's), with convergent evidence from DE analysis, ML feature importance, and pathway enrichment. Oligodendrocytes show severe metabolic stress (translation shutdown, mitochondrial dysfunction). Pipeline built with hexagonal architecture (18 passing tests), medallion data layers, and MLflow experiment tracking.
+Scanpy, AnnData, CellTypist, scikit-learn, XGBoost, MLflow, GSEApy, Pandas, SciPy, Matplotlib, pytest
 
-See `docs/PROJECT_LOG.md` for detailed development history and decision tracking.
+------
+
+## Future Work
+
+- **Phase 2:** ATAC-seq integration (OSD-352 is multiome — RNA + ATAC from same nuclei)
+- **Phase 3:** Autonomous hyperparameter optimization with GLM-5.1
+- **Visualization:** Interactive D3.js plots (cell networks, UMAP clusters, pathway enrichment)
+- **Multi-tissue:** Extend to RRRM-1 datasets (spleen, liver, blood) when processed data is released
 
 ------
 
 ## Author
 
-**Harpreet Singh** MSc Data Science, UBC Computational Biology & Machine Learning
+**Harpreet Singh** — MSc Data Science, UBC | Computational Biology & Machine Learning
