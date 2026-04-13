@@ -508,3 +508,37 @@ All 3 models logged to MLflow with:
 1. Optional: GSEA for biological pathway interpretation
 2. Phase 2: ATAC-seq integration
 3. Phase 3: GLM-5.1 autonomous optimization (when more data available)
+
+---
+
+## 2026-04-13: Hexagonal Architecture Refactor Complete
+
+### What Changed
+Extracted reusable logic from notebooks into proper `src/spacegen/` package following hexagonal (ports & adapters) architecture.
+
+### Package Structure
+```
+src/spacegen/
+├── core/                    # Pure functions — no I/O
+│   ├── qc.py               # condition-aware filtering, QC metrics
+│   ├── normalization.py     # normalize, log1p, HVG selection
+│   └── features.py          # pseudobulk aggregation, feature engineering
+├── ports/
+│   └── data_port.py         # DataReader, DataWriter ABCs (includes write_json for D3)
+└── adapters/
+    ├── h5_reader.py         # BronzeH5Reader: Parquet + HDF5 → AnnData
+    ├── h5ad_reader.py       # H5adReader: .h5ad → AnnData
+    └── local_writer.py      # LocalWriter: .h5ad, .parquet, .json output
+```
+
+### Test Suite
+18 tests, all passing:
+- `test_core_qc.py` (6 tests): QC metrics, condition-aware filtering, immutability
+- `test_core_normalization.py` (6 tests): Normalization, raw preservation, HVG selection
+- `test_core_features.py` (6 tests): Pseudobulk, proportions, feature merging
+
+### Key Design Decisions
+- Core functions are pure: take AnnData in, return AnnData out, no side effects
+- All functions return copies — input data is never modified (verified by tests)
+- DataWriter port includes `write_json` for future D3 visualization layer
+- Notebooks remain as-is (narrative/documentation); `src/` is the production code

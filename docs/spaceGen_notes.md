@@ -122,3 +122,15 @@ ____
 **Interview framing:** "The classifier demonstrated the expected sample size limitation with n=5 biological replicates. The AUROC of 0.757 for Elastic Net shows the features carry signal, but robust classification requires more biological replicates. The pipeline is designed to scale — when RRRM-1 processed data becomes available, the same architecture handles multi-tissue, multi-sample classification without code changes."
 
 **Feature importance validates biology:** The top XGBoost features include mitochondrial complex genes (Cox8a, Ndufs5, Ndufb7), ribosomal proteins (Rpl21, Rpl18), and cell type proportions — all consistent with the DE findings. This cross-validation between supervised and unsupervised analyses strengthens the biological conclusions.
+
+____
+
+### D3 Visualization Layer (Planned)
+
+After the core pipeline is complete, build interactive D3.js visualizations for:
+- Cell-cell communication networks (nodes = cell types, edges = signaling interactions)
+- UMAP cluster plots (interactive, hover for cell type info)
+- DE volcano plots (interactive gene selection)
+- Feature importance charts
+
+The `DataWriter` port should support JSON export for D3 consumption — node/edge lists, coordinate arrays, etc. This connects to the GenBrowser project (Three.js/TypeScript) in the portfolio arc.

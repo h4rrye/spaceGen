@@ -69,10 +69,28 @@ spaceGen/
 │
 ├── src/                            # Source code
 │   ├── .gitkeep
+│   ├── spacegen/                   # Main package (hexagonal architecture)
+│   │   ├── __init__.py
+│   │   ├── core/                   # Pure business logic (no I/O)
+│   │   │   ├── __init__.py
+│   │   │   ├── qc.py              # Condition-aware QC filtering
+│   │   │   ├── normalization.py   # Normalize, log1p, HVG selection
+│   │   │   └── features.py        # Pseudobulk aggregation, feature engineering
+│   │   ├── ports/                  # Abstract interfaces
+│   │   │   ├── __init__.py
+│   │   │   └── data_port.py       # DataReader, DataWriter ABCs
+│   │   └── adapters/              # Concrete I/O implementations
+│   │       ├── __init__.py
+│   │       ├── h5_reader.py       # BronzeH5Reader
+│   │       ├── h5ad_reader.py     # H5adReader
+│   │       └── local_writer.py    # LocalWriter (.h5ad, .parquet, .json)
 │   └── spacegen.egg-info/          # Package metadata (auto-generated)
 │
 └── tests/                          # Unit and integration tests
-    └── .gitkeep
+    ├── __init__.py
+    ├── test_core_qc.py             # QC function tests (6 tests)
+    ├── test_core_normalization.py  # Normalization tests (6 tests)
+    └── test_core_features.py       # Feature engineering tests (6 tests)
 ```
 
 ---
