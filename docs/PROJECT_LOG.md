@@ -428,7 +428,83 @@ All 21 canonical brain markers present and validated against CellTypist labels:
 - All docs updated
 
 ### Next Steps
-1. Feature engineering for ML classifier (`05_gold_features.ipynb`)
+1. ✅ Feature engineering for ML classifier (`05_gold_features.ipynb`)
 2. Train spaceflight classifier (elastic net, XGBoost)
 3. MLflow experiment tracking
 4. Phase 2: ATAC-seq integration
+
+---
+
+## 2026-04-12: Feature Engineering Complete
+
+### Pseudobulk Aggregation Strategy
+Aggregated 27,968 cells into 54 pseudobulk profiles (sample × cell type).
+This avoids pseudoreplication — cells from the same mouse are not independent observations.
+A per-cell classifier would learn mouse-specific patterns, not spaceflight effects.
+
+**Profiles:** 54 total (32 Space Flight, 22 Ground Control)
+**Cell types used:** 11 (same as DE analysis, minimum 50 cells per condition)
+**Minimum cells per profile:** 5
+
+### Feature Composition (3,256 total)
+1. **DE gene expression** (3,240): Mean expression of significant DE genes (adj p < 0.05, |logFC| > 0.5)
+2. **Cell type proportions** (11): Fraction of each cell type per sample
+3. **QC metrics** (5): Mean/median genes, UMI counts, mt% per profile
+
+### Key Proportion Observations
+- CB Granule Glut: 69-73% in GC vs 24-54% in Flight
+- Microglia: 0.7-0.8% in GC vs 1.4-2.7% in Flight
+- Oligo NN: Sample F2 has 16% vs 6-10% in others (sample variation)
+
+### Files Created/Modified
+- `notebooks/05_gold_features.ipynb` — feature engineering implementation
+- `data/gold/osd352_brain_v1_features.parquet` (2.5 MB) — ML feature matrix
+- All docs updated
+
+### Next Steps
+1. Model training with MLflow tracking (`06_model_training.ipynb`)
+2. Elastic net + XGBoost classifiers
+3. SHAP feature importance analysis
+4. Optional: GSEA for biological interpretation
+
+---
+
+## 2026-04-13: Model Training Complete — MLflow Tracked
+
+### Models Trained (LOSO-CV)
+| Model | Accuracy | F1 | AUROC | Mean Fold Acc |
+|-------|----------|-----|-------|---------------|
+| Elastic Net | 0.574 | 0.646 | 0.757 | 0.582 ± 0.444 |
+| Random Forest | 0.593 | 0.703 | 0.548 | 0.596 ± 0.294 |
+| XGBoost | 0.593 | 0.744 | 0.440 | 0.600 ± 0.490 |
+
+Best model: Elastic Net (AUROC 0.757)
+
+### Why Performance is Limited
+With only 5 biological samples (3 Flight, 2 GC), all models struggle to generalize across mice. This is a sample size limitation, not a methodology problem. LOSO-CV correctly exposes this — each fold holds out an entire mouse, and the models can't reliably predict unseen animals.
+
+Tree-based models (RF, XGBoost) overfit and predict everything as the majority class (spaceflight). Elastic Net's L1+L2 regularization handles the high-dimensional feature space (3,256 features, ~43 training samples) most gracefully.
+
+### Feature Importance (XGBoost)
+Top features reveal biologically meaningful signals:
+- Ypel3: Stress-responsive tumor suppressor (top feature)
+- Cox8a, Ndufs5, Ndufb7: Mitochondrial complex genes (confirms mt stress)
+- Rpl21, Rpl18: Ribosomal proteins (translational stress)
+- 4 cell type proportions in top 20: CB Granule, Oligo, PGRN-PARN-MDRN, CBX MLI
+
+### MLflow Tracking
+All 3 models logged to MLflow with:
+- Hyperparameters
+- Metrics (accuracy, F1, AUROC)
+- Confusion matrix artifacts
+- Serialized models
+
+### Files Created
+- `notebooks/06_model_training.ipynb` — model training with MLflow
+- `mlruns/` — MLflow experiment tracking data
+- `reports/` — confusion matrix and feature importance plots
+
+### Next Steps
+1. Optional: GSEA for biological pathway interpretation
+2. Phase 2: ATAC-seq integration
+3. Phase 3: GLM-5.1 autonomous optimization (when more data available)

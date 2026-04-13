@@ -46,6 +46,7 @@ spaceGen/
 │   └── gold/                       # Gold layer (annotated + DE)
 │       ├── osd352_brain_v1_annotated.h5ad  # 67 cell types, 22 clusters (654 MB)
 │       └── osd352_brain_v1_de_results.parquet  # DE results (3.2 MB)
+│       └── osd352_brain_v1_features.parquet    # ML features (2.5 MB, 54×3261)
 │
 ├── docs/                           # Documentation
 │   ├── PROJECT_LOG.md              # Development log and decisions
@@ -60,6 +61,8 @@ spaceGen/
 │   ├── 02_bronze_ingestion.ipynb   # Bronze layer ingestion
 │   └── 03_silver_qc.ipynb          # Silver layer QC and normalization
 │   └── 04_gold_clustering.ipynb    # Gold layer clustering, annotation, DE
+│   └── 05_gold_features.ipynb     # Feature engineering for ML classifier
+│   └── 06_model_training.ipynb    # ML classifiers with MLflow tracking
 │
 ├── reports/                        # Analysis outputs and reports
 │   └── .gitkeep

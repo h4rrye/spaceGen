@@ -198,6 +198,34 @@ Extends silver layer with clustering, cell type annotations, and DE results.
 - Bergmann glia: Zbtb16, Sparc downregulated (neuronal differentiation, synaptic plasticity)
 - Astrocytes: Aldoc, Atp1b2 downregulated (metabolic and ion transport disruption)
 
+### ML Feature Matrix — osd352_brain_v1_features.parquet
+
+Pseudobulk feature matrix for ML classifier training.
+
+**Aggregation:** Per sample × cell type (avoids pseudoreplication)
+
+**Metadata columns:**
+- `sample_name` (str) — Sample identifier
+- `cell_type` (str) — Cell type label
+- `condition` (str) — Space Flight or Ground Control
+- `n_cells` (int) — Number of cells in this pseudobulk profile
+- `label` (int) — Binary label (1 = Space Flight, 0 = Ground Control)
+
+**Feature columns (3,256 total):**
+- `expr_{gene}` (float) — Mean expression of 3,240 significant DE genes per profile
+- `prop_{cell_type}` (float) — 11 cell type proportion features per sample
+- `qc_mean_genes` (float) — Mean genes detected per profile
+- `qc_mean_counts` (float) — Mean UMI counts per profile
+- `qc_mean_mt_pct` (float) — Mean mitochondrial % per profile
+- `qc_median_genes` (float) — Median genes detected per profile
+- `qc_median_counts` (float) — Median UMI counts per profile
+
+**Details:**
+- Rows: 54 pseudobulk profiles (32 Space Flight, 22 Ground Control)
+- Minimum 5 cells per sample × cell type combination
+- Cell types: 11 (same as DE analysis)
+- File size: 2.5 MB
+
 ---
 
 ## Notes

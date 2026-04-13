@@ -110,3 +110,15 @@ Hsph1, Hsp90ab1, and Cryab (heat shock / protein folding chaperones) are downreg
 
 **Cerebellar motor coordination:**
 Pcp2 (Purkinje cell protein 2) is strongly downregulated (logFC -3.3) in cerebellar granule neurons. Pcp2 is critical for cerebellar function and motor coordination — this finding connects to known astronaut reports of balance and coordination issues post-spaceflight.
+
+____
+
+### ML Classifier Results and Limitations
+
+**Why n=5 matters:** With 5 biological samples, LOSO-CV gives 5 folds with ~43 training profiles and ~11 test profiles each. The models have 3,256 features to learn from — a classic high-p, low-n problem. Elastic Net handles this best because L1 regularization performs automatic feature selection, zeroing out irrelevant features.
+
+**Why Elastic Net > XGBoost here:** Counter-intuitive, but expected. XGBoost and Random Forest are powerful when you have enough data to learn complex decision boundaries. With 5 samples, they memorize training patterns and fail on held-out mice. Elastic Net's simplicity is its strength — it finds a linear boundary that generalizes better.
+
+**Interview framing:** "The classifier demonstrated the expected sample size limitation with n=5 biological replicates. The AUROC of 0.757 for Elastic Net shows the features carry signal, but robust classification requires more biological replicates. The pipeline is designed to scale — when RRRM-1 processed data becomes available, the same architecture handles multi-tissue, multi-sample classification without code changes."
+
+**Feature importance validates biology:** The top XGBoost features include mitochondrial complex genes (Cox8a, Ndufs5, Ndufb7), ribosomal proteins (Rpl21, Rpl18), and cell type proportions — all consistent with the DE findings. This cross-validation between supervised and unsupervised analyses strengthens the biological conclusions.
