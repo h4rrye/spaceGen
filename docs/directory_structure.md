@@ -63,6 +63,7 @@ spaceGen/
 │   └── 04_gold_clustering.ipynb    # Gold layer clustering, annotation, DE
 │   └── 05_gold_features.ipynb     # Feature engineering for ML classifier
 │   └── 06_model_training.ipynb    # ML classifiers with MLflow tracking
+│   └── 07_gsea.ipynb              # Gene set enrichment analysis
 │
 ├── reports/                        # Analysis outputs and reports
 │   └── .gitkeep

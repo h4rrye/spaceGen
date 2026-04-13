@@ -542,3 +542,35 @@ src/spacegen/
 - All functions return copies — input data is never modified (verified by tests)
 - DataWriter port includes `write_json` for future D3 visualization layer
 - Notebooks remain as-is (narrative/documentation); `src/` is the production code
+
+---
+
+## 2026-04-13: GSEA Complete — Neurodegenerative Pathway Discovery
+
+### Analysis
+Pre-ranked GSEA (GO Biological Process) + Enrichr (KEGG) for top 3 cell types by DE gene count.
+
+### KEGG Results — Brainstem Neurons (PGRN-PARN-MDRN Hoxb5 Glut)
+All 15 top pathways highly significant (adj p < 1e-5):
+- ALS (p=1e-12), Parkinson's (p=6e-10), Huntington's (p=1e-7), Alzheimer's (p=3e-7)
+- Oxidative phosphorylation (p=3e-9)
+- Ubiquitin-mediated proteolysis (p=2e-8)
+- Ribosome (p=5e-6)
+
+**Key finding:** Spaceflight DE genes are enriched in neurodegenerative disease pathways, suggesting shared molecular mechanisms between microgravity and neurodegeneration.
+
+### GO Results — Oligodendrocytes
+All top pathways have negative NES (downregulated in spaceflight):
+- Translation, cytoplasmic translation, peptide biosynthesis — protein synthesis shutdown
+- Mitochondrial ATP synthesis, aerobic electron transport — energy production disrupted
+- Cellular respiration — metabolic collapse
+
+### GO Results — CB Granule Neurons
+- Glucose homeostasis + potassium ion transport downregulated
+- Calcineurin-NFAT signaling upregulated (calcium stress response)
+- Response to radiation upregulated (cosmic radiation exposure)
+
+### Files Created
+- `notebooks/07_gsea.ipynb` — GSEA analysis
+- `reports/` — pathway enrichment plots
+- `pyproject.toml` — added gseapy dependency

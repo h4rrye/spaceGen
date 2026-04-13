@@ -134,3 +134,18 @@ After the core pipeline is complete, build interactive D3.js visualizations for:
 - Feature importance charts
 
 The `DataWriter` port should support JSON export for D3 consumption — node/edge lists, coordinate arrays, etc. This connects to the GenBrowser project (Three.js/TypeScript) in the portfolio arc.
+
+____
+
+### GSEA: Neurodegenerative Disease Pathway Enrichment
+
+The most significant KEGG finding: spaceflight DE genes in brainstem neurons overlap heavily with neurodegenerative disease pathways (ALS, Parkinson's, Huntington's, Alzheimer's). This doesn't mean spaceflight causes these diseases — it means the molecular stress response shares common machinery.
+
+The biological story across all analyses:
+1. **Mitochondrial dysfunction** (DE: Cox8a, Ndufs5, Ndufb7; GO: oxidative phosphorylation, cellular respiration; KEGG: oxidative phosphorylation)
+2. **Protein homeostasis disruption** (DE: Hsph1, Hsp90ab1, Cryab; GO: translation, peptide biosynthesis; KEGG: ubiquitin proteolysis, ribosome)
+3. **Neuroinflammation** (DE: C1qa, C1qb; cell type: 4.4x microglia enrichment; GO: Fc receptor signaling)
+4. **BBB compromise** (GO: blood-brain barrier maintenance downregulated)
+5. **Cell death activation** (GO: apoptotic regulation; KEGG: neurodegeneration pathways)
+
+This convergence across independent analyses (DE, ML feature importance, GO, KEGG) strengthens the conclusions — it's not an artifact of any single method.

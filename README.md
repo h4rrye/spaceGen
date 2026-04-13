@@ -122,7 +122,7 @@ The **modeling** stage trains classifiers (elastic net, XGBoost) to predict spac
 
 ## Current Status
 
-End-to-end pipeline complete for OSD-352 brain tissue: bronze → silver → gold → model. Gold layer includes 67 CellTypist-annotated cell types, DE analysis revealing Malat1 as a pan-cell-type spaceflight biomarker, and 4.4x microglial enrichment. ML classifiers (Elastic Net, Random Forest, XGBoost) trained with LOSO-CV and MLflow tracking. Elastic Net achieved best AUROC (0.757); limited accuracy (~59%) is expected with n=5 biological samples. Feature importance highlights mitochondrial stress genes and cell type composition changes. Pipeline architecture ready for RRRM-1 multi-tissue extension.
+End-to-end pipeline complete for OSD-352 brain tissue: bronze → silver → gold → model → GSEA. Key discovery: spaceflight DE genes in brainstem neurons are significantly enriched in neurodegenerative disease pathways (ALS, Parkinson's, Alzheimer's), with convergent evidence from DE analysis, ML feature importance, and pathway enrichment. Oligodendrocytes show severe metabolic stress (translation shutdown, mitochondrial dysfunction). Pipeline built with hexagonal architecture (18 passing tests), medallion data layers, and MLflow experiment tracking.
 
 See `docs/PROJECT_LOG.md` for detailed development history and decision tracking.
 
