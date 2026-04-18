@@ -77,3 +77,10 @@ class TestFilterCellsConditionAware:
         n_before = adata_qc.n_obs
         filter_cells_condition_aware(adata_qc, min_genes=1, min_counts=1)
         assert adata_qc.n_obs == n_before
+
+    def test_accepts_config_object(self, mock_adata):
+        from spacegen.models.configs import QCConfig
+        adata_qc = calculate_qc_metrics(mock_adata)
+        config = QCConfig(min_genes=1, min_counts=1, max_counts=999999)
+        result = filter_cells_condition_aware(adata_qc, config=config)
+        assert result.n_obs <= adata_qc.n_obs
