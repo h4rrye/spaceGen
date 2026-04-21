@@ -1,0 +1,201 @@
+{
+  "metadata": {
+    "dataset": "OSD-352",
+    "mission": "Rodent Research-3",
+    "tissue": "Brain",
+    "organism": "Mus musculus",
+    "cells_analyzed": 27968,
+    "cell_types_identified": 67,
+    "pipeline": "spaceGen v0.1.0"
+  },
+  "nodes": [
+    {
+      "id": "hub",
+      "label": "Spaceflight Neurodegenerative Signature",
+      "type": "finding",
+      "description": "Convergent neurodegenerative molecular signature identified across three brain cell types in spaceflight-exposed mice. GSEA reveals shared pathway activation with ALS, Parkinson's, Huntington's, and Alzheimer's disease."
+    },
+    {
+      "id": "ct_brainstem",
+      "label": "Brainstem Neurons",
+      "type": "cell_type",
+      "full_name": "PGRN-PARN-MDRN Hoxb5 Glut",
+      "n_cells_flight": 429,
+      "n_cells_gc": 214,
+      "enrichment_ratio": 2.0,
+      "description": "Brainstem glutamatergic neurons with the strongest neurodegenerative pathway convergence in the dataset. All five major neurodegenerative disease KEGG pathways (ALS, Parkinson's, Huntington's, Alzheimer's, Prion) are significantly enriched — the defining result of this analysis. 3,655 DE genes between spaceflight and ground control, with oxidative phosphorylation disruption and ubiquitin-mediated proteolysis activation pointing to shared molecular mechanisms between microgravity exposure and neurodegeneration."
+    },
+    {
+      "id": "ct_oligo",
+      "label": "Oligodendrocytes",
+      "type": "cell_type",
+      "full_name": "Oligo NN",
+      "n_cells_flight": 1355,
+      "n_cells_gc": 696,
+      "enrichment_ratio": 1.9,
+      "description": "Myelin-producing cells showing severe metabolic collapse under spaceflight. Translation, mitochondrial ATP synthesis, and cellular respiration pathways are all downregulated."
+    },
+    {
+      "id": "ct_granule",
+      "label": "CB Granule Neurons",
+      "type": "cell_type",
+      "full_name": "CB Granule Glut",
+      "n_cells_flight": 6223,
+      "n_cells_gc": 7082,
+      "enrichment_ratio": 0.88,
+      "description": "Cerebellar granule neurons — the dominant brain cell population. Show disrupted glucose homeostasis and activated calcium stress signaling under spaceflight."
+    },
+    {
+      "id": "pw_als",
+      "label": "ALS",
+      "type": "pathway",
+      "full_name": "Amyotrophic Lateral Sclerosis",
+      "source": "KEGG",
+      "pvalue": 1.04e-12,
+      "direction": "up",
+      "description": "Motor neuron disease pathway. The most significantly enriched KEGG pathway in spaceflight brainstem neurons (p=1.04×10⁻¹²). Suggests spaceflight activates molecular machinery shared with ALS pathogenesis."
+    },
+    {
+      "id": "pw_parkinson",
+      "label": "Parkinson's Disease",
+      "type": "pathway",
+      "full_name": "Parkinson Disease",
+      "source": "KEGG",
+      "pvalue": 5.75e-10,
+      "direction": "up",
+      "description": "Dopaminergic neurodegeneration pathway. Enriched in spaceflight brainstem neurons (p=5.75×10⁻¹⁰). Involves mitochondrial dysfunction and oxidative stress — both confirmed by independent DE analysis."
+    },
+    {
+      "id": "pw_huntington",
+      "label": "Huntington's Disease",
+      "type": "pathway",
+      "full_name": "Huntington Disease",
+      "source": "KEGG",
+      "pvalue": 1.22e-7,
+      "direction": "up",
+      "description": "Polyglutamine repeat disorder pathway. Enriched in spaceflight brainstem neurons (p=1.22×10⁻⁷). Shares mitochondrial dysfunction and protein aggregation mechanisms with other neurodegenerative pathways."
+    },
+    {
+      "id": "pw_alzheimer",
+      "label": "Alzheimer's Disease",
+      "type": "pathway",
+      "full_name": "Alzheimer Disease",
+      "source": "KEGG",
+      "pvalue": 2.67e-7,
+      "direction": "up",
+      "description": "Amyloid and tau pathology pathway. Enriched in spaceflight brainstem neurons (p=2.67×10⁻⁷). Complement pathway suppression (C1qa, C1qb) in microglia further supports neuroinflammatory connection."
+    },
+    {
+      "id": "pw_oxphos",
+      "label": "Oxidative Phosphorylation",
+      "type": "pathway",
+      "full_name": "Oxidative Phosphorylation",
+      "source": "KEGG",
+      "pvalue": 3.24e-9,
+      "direction": "down",
+      "description": "Mitochondrial energy production pathway. Downregulated across multiple cell types. Confirmed by DE analysis showing Cox8a, Ndufs5, Ndufb7 (mitochondrial complex genes) as top ML features."
+    },
+    {
+      "id": "pw_translation",
+      "label": "Translation",
+      "type": "pathway",
+      "full_name": "Translation (GO:0006412)",
+      "source": "GO_BP",
+      "pvalue": 0.01,
+      "direction": "down",
+      "description": "Protein synthesis machinery. Strongly downregulated in oligodendrocytes — the most negative NES score. Ribosomal proteins (Rpl21, Rpl18) also appear as top ML classifier features."
+    },
+    {
+      "id": "pw_mito_atp",
+      "label": "Mitochondrial ATP Synthesis",
+      "type": "pathway",
+      "full_name": "Mitochondrial ATP Synthesis Coupled Electron Transport (GO:0042775)",
+      "source": "GO_BP",
+      "pvalue": 0.01,
+      "direction": "down",
+      "description": "Mitochondrial electron transport chain. Downregulated in oligodendrocytes, consistent with the KEGG oxidative phosphorylation finding. Indicates energy crisis in myelin-producing cells."
+    },
+    {
+      "id": "pw_glucose",
+      "label": "Glucose Homeostasis",
+      "type": "pathway",
+      "full_name": "Glucose Homeostasis (GO:0042593)",
+      "source": "GO_BP",
+      "pvalue": 0.05,
+      "direction": "down",
+      "description": "Blood sugar regulation pathway. Downregulated in cerebellar granule neurons. Combined with potassium ion transport disruption, suggests metabolic and electrophysiological dysfunction."
+    },
+    {
+      "id": "pw_calcineurin",
+      "label": "Calcineurin-NFAT Signaling",
+      "type": "pathway",
+      "full_name": "Regulation of Calcineurin-NFAT Signaling Cascade (GO:0070884)",
+      "source": "GO_BP",
+      "pvalue": 0.05,
+      "direction": "up",
+      "description": "Calcium-dependent stress signaling. Upregulated in cerebellar granule neurons. Calcineurin-NFAT is activated by sustained calcium influx — a hallmark of neuronal stress and excitotoxicity."
+    },
+    {
+      "id": "pw_bbb",
+      "label": "Blood-Brain Barrier",
+      "type": "pathway",
+      "full_name": "Maintenance of Blood-Brain Barrier (GO:0035633)",
+      "source": "GO_BP",
+      "pvalue": 0.05,
+      "direction": "down",
+      "description": "BBB integrity maintenance. Downregulated in brainstem neurons. BBB disruption under spaceflight could allow peripheral immune factors to enter the brain, exacerbating neuroinflammation."
+    },
+    {
+      "id": "pw_apoptosis",
+      "label": "Apoptotic Regulation",
+      "type": "pathway",
+      "full_name": "Regulation of Cysteine-Type Endopeptidase Activity in Apoptotic Process (GO:0043281)",
+      "source": "GO_BP",
+      "pvalue": 0.05,
+      "direction": "up",
+      "description": "Programmed cell death regulation. Upregulated in brainstem neurons. Caspase activation indicates cells are entering apoptotic pathways — consistent with the neurodegenerative signature."
+    },
+    {
+      "id": "pw_radiation",
+      "label": "Radiation Response",
+      "type": "pathway",
+      "full_name": "Cellular Response to Radiation (GO:0071478)",
+      "source": "GO_BP",
+      "pvalue": 0.05,
+      "direction": "up",
+      "description": "Cellular response to ionizing radiation. Upregulated in cerebellar granule neurons. Directly relevant to spaceflight — cosmic radiation exposure on the ISS is a known hazard for astronaut health."
+    },
+    {
+      "id": "pw_ubiquitin",
+      "label": "Ubiquitin Proteolysis",
+      "type": "pathway",
+      "full_name": "Ubiquitin Mediated Proteolysis",
+      "source": "KEGG",
+      "pvalue": 2.05e-8,
+      "direction": "up",
+      "description": "Protein degradation via ubiquitin-proteasome system. Upregulated in brainstem neurons (p=2.05×10⁻⁸). Cells are actively clearing damaged proteins — a hallmark of proteotoxic stress in neurodegeneration."
+    }
+  ],
+  "edges": [
+    {"source": "ct_brainstem", "target": "hub", "type": "contributes_to"},
+    {"source": "ct_oligo", "target": "hub", "type": "contributes_to"},
+    {"source": "ct_granule", "target": "hub", "type": "contributes_to"},
+
+    {"source": "ct_brainstem", "target": "pw_als", "type": "enriched", "pvalue": 1.04e-12},
+    {"source": "ct_brainstem", "target": "pw_parkinson", "type": "enriched", "pvalue": 5.75e-10},
+    {"source": "ct_brainstem", "target": "pw_huntington", "type": "enriched", "pvalue": 1.22e-7},
+    {"source": "ct_brainstem", "target": "pw_alzheimer", "type": "enriched", "pvalue": 2.67e-7},
+    {"source": "ct_brainstem", "target": "pw_oxphos", "type": "enriched", "pvalue": 3.24e-9},
+    {"source": "ct_brainstem", "target": "pw_bbb", "type": "enriched", "pvalue": 0.05},
+    {"source": "ct_brainstem", "target": "pw_apoptosis", "type": "enriched", "pvalue": 0.05},
+    {"source": "ct_brainstem", "target": "pw_ubiquitin", "type": "enriched", "pvalue": 2.05e-8},
+
+    {"source": "ct_oligo", "target": "pw_translation", "type": "enriched", "pvalue": 0.01},
+    {"source": "ct_oligo", "target": "pw_mito_atp", "type": "enriched", "pvalue": 0.01},
+    {"source": "ct_oligo", "target": "pw_oxphos", "type": "enriched", "pvalue": 0.01},
+
+    {"source": "ct_granule", "target": "pw_glucose", "type": "enriched", "pvalue": 0.05},
+    {"source": "ct_granule", "target": "pw_calcineurin", "type": "enriched", "pvalue": 0.05},
+    {"source": "ct_granule", "target": "pw_radiation", "type": "enriched", "pvalue": 0.05}
+  ]
+}

@@ -19,6 +19,7 @@ mlruns/
 
 # Data (large files)
 data/
+!viz/data/
 
 # Testing
 .pytest_cache/
