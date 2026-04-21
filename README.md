@@ -105,7 +105,7 @@ All experiments tracked with MLflow. Run `mlflow ui --backend-store-uri file:mlr
 
 Third project in a computational biology portfolio following data through chromosome structure → chromatin accessibility → gene expression:
 
-- **[GenBrowser](https://h4rrye.github.io/genBrowser)** — 3D chromosome visualization (Three.js/TypeScript)
+- **[GenBrowser](https://hrrysprk.github.io/genBrowser)** — 3D chromosome visualization (Three.js/TypeScript)
 - **[ChromApipe](https://github.com/h4rrye/chromApipe)** — Nextflow pipeline for Chromosome Surface Accessible Area (AWS Batch)
 - **spaceGen** — scRNA-seq ML pipeline for spaceflight biology (hexagonal architecture, MLflow)
 
